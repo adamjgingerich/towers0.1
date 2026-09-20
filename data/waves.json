@@ -41,8 +41,8 @@
     "speed_cap": 2.0,
 
     "_armor_comment": "Flat armour every enemy gains as the run goes on. This is the one late-game lever that lowers the player's EFFECTIVE damage instead of raising a health bar, so it bites on a different axis than hp does: a gatling or flamethrower built on many tiny hits loses a far larger fraction of its output than a sniper does, and towers that ignore or halve armour (venom, tesla) become the answer. Deliberately NOT multiplied by difficulty `power`: armour is subtraction, and a 5x multiplier would leave low-damage towers unable to damage anything at all rather than merely weakened.",
-    "armor_lin": 0.11,
-    "armor_cap": 14,
+    "armor_lin": 0.085,
+    "armor_cap": 12,
 
     "bounty_lin": 0.03,
     "bounty_exp": 1.045
