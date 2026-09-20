@@ -1,0 +1,210 @@
+{
+  "_comment": "radius is in TILE UNITS. speed is in TILE UNITS per second. unlock_wave gates the type out of early waves. weight drives endless composition; higher weight = appears more often once unlocked. skill raises weight faster as waves progress.",
+
+  "basic": {
+    "name": "Basic",
+    "hp": 100,
+    "speed": 1.5,
+    "radius": 0.22,
+    "armor": 0,
+    "armor_class": "light",
+    "bounty": 8,
+    "leak": 1,
+    "flying": false,
+    "cc_resist": 0.0,
+    "unlock_wave": 1,
+    "weight": 10.0,
+    "skill": 0.0,
+    "death_fx": ""
+  },
+
+  "fast": {
+    "name": "Fast",
+    "hp": 60,
+    "speed": 3.2,
+    "radius": 0.18,
+    "armor": 0,
+    "armor_class": "light",
+    "bounty": 10,
+    "leak": 1,
+    "flying": false,
+    "cc_resist": 0.0,
+    "unlock_wave": 3,
+    "weight": 7.0,
+    "skill": 0.02,
+    "death_fx": ""
+  },
+
+  "heavy": {
+    "name": "Heavy",
+    "hp": 420,
+    "speed": 0.9,
+    "radius": 0.30,
+    "armor": 4,
+    "armor_class": "light",
+    "bounty": 25,
+    "leak": 3,
+    "flying": false,
+    "cc_resist": 0.0,
+    "unlock_wave": 6,
+    "weight": 4.5,
+    "skill": 0.03,
+    "death_fx": ""
+  },
+
+  "armored": {
+    "name": "Armored",
+    "hp": 220,
+    "speed": 1.2,
+    "radius": 0.25,
+    "armor": 14,
+    "armor_class": "armored",
+    "bounty": 20,
+    "leak": 2,
+    "flying": false,
+    "cc_resist": 0.0,
+    "unlock_wave": 9,
+    "weight": 5.0,
+    "skill": 0.03,
+    "death_fx": "shatter"
+  },
+
+  "flyer": {
+    "name": "Flyer",
+    "hp": 150,
+    "speed": 2.0,
+    "radius": 0.22,
+    "armor": 0,
+    "armor_class": "light",
+    "bounty": 18,
+    "leak": 1,
+    "flying": true,
+    "cc_resist": 0.0,
+    "unlock_wave": 11,
+    "weight": 5.0,
+    "skill": 0.03,
+    "death_fx": "pop"
+  },
+
+  "healer": {
+    "name": "Healer",
+    "hp": 180,
+    "speed": 1.3,
+    "radius": 0.24,
+    "armor": 2,
+    "armor_class": "light",
+    "bounty": 22,
+    "leak": 2,
+    "flying": false,
+    "cc_resist": 0.0,
+    "unlock_wave": 14,
+    "weight": 3.0,
+    "skill": 0.01,
+    "_heal_note": "Healing is what makes a late wave a wall rather than a queue: it restores health the player has already paid to remove, so it scales against total damage over time rather than against burst. Raised because it was the single smoothest part of the difficulty curve -- see docs/DESIGN.md.",
+    "heal_per_sec": 22.0,
+    "heal_radius": 2.5,
+    "death_fx": "coins"
+  },
+
+  "bulwark": {
+    "name": "Bulwark",
+    "hp": 320,
+    "speed": 1.05,
+    "radius": 0.30,
+    "armor": 6,
+    "armor_class": "armored",
+    "bounty": 34,
+    "leak": 3,
+    "flying": false,
+    "cc_resist": 0.25,
+    "unlock_wave": 22,
+    "weight": 3.4,
+    "skill": 0.02,
+
+    "_shield_note": "A regenerating barrier, not a flat resistance: damage is eaten by the pool before it reaches health, and the pool refills after `shield_delay` seconds without being hit. Chip damage therefore does almost nothing once regeneration outpaces it, and the answers are burst (sniper, cannon) or energy (tesla, whose shield_mult is 1.5). This is the multiplicative counterweight the flat armour scaling could not provide -- armour is subtracted, so it is irrelevant against a maxed tower, whereas a pool that refills scales with whatever is shooting it.",
+    "shield": 200,
+    "shield_regen": 35,
+    "shield_delay": 3.5,
+
+    "death_fx": "shatter"
+  },
+
+  "runner": {
+    "name": "Runner",
+    "hp": 45,
+    "speed": 4.4,
+    "radius": 0.18,
+    "armor": 0,
+    "armor_class": "light",
+    "bounty": 6,
+    "leak": 1,
+    "flying": false,
+    "cc_resist": 0.15,
+    "unlock_wave": 8,
+    "weight": 4.0,
+    "skill": 0.035,
+    "_runner_note": "Cheap, fast and numerous. Its job is not to survive anything -- it is to make a single killbox insufficient, because a runner crosses a two-tile gap in under half a second and a build that only covers one stretch of road leaks them by the dozen.",
+    "death_fx": ""
+  },
+
+  "splitter": {
+    "name": "Splitter",
+    "hp": 260,
+    "speed": 1.1,
+    "radius": 0.30,
+    "armor": 3,
+    "armor_class": "light",
+    "bounty": 26,
+    "leak": 2,
+    "flying": false,
+    "cc_resist": 0.0,
+    "unlock_wave": 18,
+    "weight": 3.0,
+    "skill": 0.02,
+
+    "_split_note": "Breaks into two fasts at the point of death, each carrying hp_share of the parent's health. That makes the split a real addition to the wave rather than a recycling of it, and it punishes single-target overkill: a sniper that one-shots the parent has to deal with the children too, while a splash tower kills parent and children together.",
+    "spawn_on_death": { "key": "fast", "count": 2, "hp_share": 0.35 },
+
+    "death_fx": "goo"
+  },
+
+  "warden": {
+    "name": "Warden",
+    "hp": 190,
+    "speed": 1.7,
+    "radius": 0.26,
+    "armor": 2,
+    "armor_class": "light",
+    "bounty": 28,
+    "leak": 2,
+    "flying": true,
+    "cc_resist": 0.2,
+    "unlock_wave": 26,
+    "weight": 2.6,
+    "skill": 0.02,
+
+    "_warden_note": "A shielded flyer, and the reason air defence cannot be one missile battery. Only five of the ten towers can touch air at all, and of those only the tesla is strong against a shield -- so a warden wave asks for air coverage *and* a damage type, which no single tower provides.",
+    "shield": 120,
+    "shield_regen": 22,
+    "shield_delay": 3.0,
+
+    "death_fx": "pop"
+  },
+
+  "boss": {
+    "name": "Boss",
+    "hp": 5000,
+    "speed": 0.8,
+    "radius": 0.45,
+    "armor": 10,
+    "armor_class": "armored",
+    "bounty": 400,
+    "leak": 20,
+    "flying": false,
+    "cc_resist": 0.5,
+    "unlock_wave": 25,
+    "weight": 0.0,
+    "skill": 0.0,
+    "death_fx": "boom"
+  }
+}

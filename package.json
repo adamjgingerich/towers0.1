@@ -1,0 +1,12 @@
+{
+  "name": "towers",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Endless tower defense in three.js",
+  "scripts": {
+    "serve": "python serve.py",
+    "balance": "node tools/balance_sim.mjs --waves 60",
+    "balance:trace": "node tools/balance_sim.mjs --waves 40 --trace"
+  }
+}

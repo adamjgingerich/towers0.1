@@ -1,0 +1,48 @@
+{
+  "_comment": "Playable levels. `id` is the map file stem under data/maps/. The browser cannot list a directory over HTTP, so the index is explicit. `tint` is the map's base colour: it multiplies the tile art, so the terrain palette differs per level while the underlying sprites stay shared. `zoom` is the framing the level was authored for: 1.0 shows the whole board, anything above opens closer so the scenery and the tower models can actually be read. Fit returns the player to this framing, and they can still zoom out past it to the whole map.",
+
+  "levels": [
+    {
+      "id": "level_01",
+      "name": "Switchbacks",
+      "description": "Four long switchbacks. Room to build anywhere, and a forgiving first map.",
+      "tint": "#a8a8b0",
+      "zoom": 1.0
+    },
+    {
+      "id": "level_02",
+      "name": "Sawtooth",
+      "description": "A tight zigzag that doubles back every few tiles. Short, sharp turns everywhere.",
+      "tint": "#9ec49a",
+      "zoom": 1.25
+    },
+    {
+      "id": "level_03",
+      "name": "The Z",
+      "description": "Two very long straight runs. Sniper and mortar country, if you can cover the corners.",
+      "tint": "#d9bb8e",
+      "zoom": 1.0
+    },
+    {
+      "id": "level_04",
+      "name": "Inward Spiral",
+      "description": "A slow clockwise spiral. One tower near the middle reaches every lap. Framed close, so the spiral fills the screen.",
+      "tint": "#c07a7a",
+      "zoom": 1.45
+    },
+    {
+      "id": "level_05",
+      "name": "Diagonal",
+      "description": "One long staircase cut corner to corner. A single winding lane of unit steps.",
+      "tint": "#96cfd6",
+      "zoom": 1.0
+    },
+    {
+      "id": "level_06",
+      "name": "Accordion",
+      "description": "A vertical snake whose folds close in unevenly. Five long lanes that nearly touch.",
+      "tint": "#b49ad0",
+      "zoom": 1.3
+    }
+  ]
+}

@@ -1,0 +1,219 @@
+{
+  "_comment": "Sprite sheets are authored at art_scale x logical size. frames run horizontally from `col` on `row`. Sprite keys match tower/enemy keys exactly so nothing has to be remapped at runtime.",
+  "_decor_note": "Floor markings: invented parody brand squares. Placed deterministically per map on plain buildable tiles only, and drawn in a very dark band so they never compete with gameplay. Not real trademarks. Any key starting with `_` inside `sheets` is ignored by the sheet builder.",
+
+  "_resolution_note": "art_scale multiplies every sheet's frame size at generation time; the UV maths does not care, so raising it costs only canvas memory. 3 puts a 64-unit logical sprite on a 192px frame, which stays sharp well past the deepest zoom.",
+  "pixel_art": false,
+  "art_scale": 3,
+
+  "_fx_note": "The `muzzle`, `smoke`, `spark` and `dust` sheets are the ambient half of the art. They are emitted by the renderer's particle pool, not by the simulation, so they never consume the gameplay effect budget.",
+
+  "sheets": {
+    "enemies": {
+      "file": "enemies.png",
+      "fw": 96,
+      "fh": 96,
+      "sprites": {
+        "basic":   { "row": 0, "frames": 6, "fps": 8 },
+        "fast":    { "row": 1, "frames": 6, "fps": 10 },
+        "heavy":   { "row": 2, "frames": 6, "fps": 6 },
+        "armored": { "row": 3, "frames": 6, "fps": 7 },
+        "flyer":   { "row": 4, "frames": 6, "fps": 12 },
+        "healer":  { "row": 5, "frames": 6, "fps": 8 },
+        "boss":    { "row": 6, "frames": 6, "fps": 5 },
+        "bulwark": { "row": 7, "frames": 6, "fps": 5 },
+        "runner":  { "row": 8, "frames": 6, "fps": 14 },
+        "splitter": { "row": 9, "frames": 6, "fps": 5 },
+        "warden":  { "row": 10, "frames": 6, "fps": 10 },
+
+        "_variant_note": "Each enemy has two visual mutants on the rows below (v1 swollen/warm, v2 runt/cool). The renderer appends the variant to the key, so these rows are found by `_v1`/`_v2` lookups; the sim only ever knows the base key.",
+        "basic_v1":    { "row": 11, "frames": 6, "fps": 8 },
+        "fast_v1":     { "row": 12, "frames": 6, "fps": 10 },
+        "heavy_v1":    { "row": 13, "frames": 6, "fps": 6 },
+        "armored_v1":  { "row": 14, "frames": 6, "fps": 7 },
+        "flyer_v1":    { "row": 15, "frames": 6, "fps": 12 },
+        "healer_v1":   { "row": 16, "frames": 6, "fps": 8 },
+        "boss_v1":     { "row": 17, "frames": 6, "fps": 5 },
+        "bulwark_v1":  { "row": 18, "frames": 6, "fps": 5 },
+        "runner_v1":   { "row": 19, "frames": 6, "fps": 14 },
+        "splitter_v1": { "row": 20, "frames": 6, "fps": 5 },
+        "warden_v1":   { "row": 21, "frames": 6, "fps": 10 },
+
+        "basic_v2":    { "row": 22, "frames": 6, "fps": 8 },
+        "fast_v2":     { "row": 23, "frames": 6, "fps": 10 },
+        "heavy_v2":    { "row": 24, "frames": 6, "fps": 6 },
+        "armored_v2":  { "row": 25, "frames": 6, "fps": 7 },
+        "flyer_v2":    { "row": 26, "frames": 6, "fps": 12 },
+        "healer_v2":   { "row": 27, "frames": 6, "fps": 8 },
+        "boss_v2":     { "row": 28, "frames": 6, "fps": 5 },
+        "bulwark_v2":  { "row": 29, "frames": 6, "fps": 5 },
+        "runner_v2":   { "row": 30, "frames": 6, "fps": 14 },
+        "splitter_v2": { "row": 31, "frames": 6, "fps": 5 },
+        "warden_v2":   { "row": 32, "frames": 6, "fps": 10 }
+      }
+    },
+
+    "towers_base": {
+      "file": "towers_base.png",
+      "fw": 96,
+      "fh": 96,
+      "sprites": {
+        "basic":  { "row": 0, "frames": 4, "fps": 4 },
+        "cannon": { "row": 1, "frames": 4, "fps": 4 },
+        "frost":  { "row": 2, "frames": 4, "fps": 4 },
+        "tesla":  { "row": 3, "frames": 4, "fps": 4 },
+        "venom":  { "row": 4, "frames": 4, "fps": 4 },
+        "sniper": { "row": 5, "frames": 4, "fps": 4 },
+        "gatling":      { "row": 6, "frames": 4, "fps": 6 },
+        "flamethrower": { "row": 7, "frames": 4, "fps": 6 },
+        "missile":      { "row": 8, "frames": 4, "fps": 3 },
+        "mortar":       { "row": 9, "frames": 4, "fps": 2 },
+
+        "_barracks_note": "One row per promotion rank, drawn by drawBarracks(). The simulation asks for `barracks_<rank>` so the structure visibly rebuilds itself as it evolves; adding a rank to data/barracks.json means adding a row here and nothing else.",
+        "barracks_1": { "row": 10, "frames": 4, "fps": 2 },
+        "barracks_2": { "row": 11, "frames": 4, "fps": 2 },
+        "barracks_3": { "row": 12, "frames": 4, "fps": 2 },
+        "barracks_4": { "row": 13, "frames": 4, "fps": 2 },
+        "barracks_5": { "row": 14, "frames": 4, "fps": 2 },
+        "laser":      { "row": 15, "frames": 4, "fps": 4 },
+        "sixshooter": { "row": 16, "frames": 4, "fps": 4 },
+        "dynamite":   { "row": 17, "frames": 4, "fps": 4 },
+        "grapeshot":  { "row": 18, "frames": 4, "fps": 4 },
+        "harpoon":    { "row": 19, "frames": 4, "fps": 4 },
+        "raygun":     { "row": 20, "frames": 4, "fps": 5 },
+        "ioncannon":  { "row": 21, "frames": 4, "fps": 4 }
+      }
+    },
+
+    "_turret_note": "Barrels point +x. Towers whose weapon has a moving part -- a rotating barrel cluster, a pulsing coil or emitter, a flickering pilot light -- get several frames; the rest are static and use one.",
+    "towers_turret": {
+      "file": "towers_turret.png",
+      "fw": 96,
+      "fh": 96,
+      "sprites": {
+        "basic":  { "row": 0, "frames": 1, "fps": 1 },
+        "cannon": { "row": 1, "frames": 1, "fps": 1 },
+        "frost":  { "row": 2, "frames": 4, "fps": 5 },
+        "tesla":  { "row": 3, "frames": 4, "fps": 5 },
+        "venom":  { "row": 4, "frames": 4, "fps": 4 },
+        "sniper": { "row": 5, "frames": 1, "fps": 1 },
+        "gatling":      { "row": 6, "frames": 6, "fps": 9 },
+        "flamethrower": { "row": 7, "frames": 4, "fps": 7 },
+        "missile":      { "row": 8, "frames": 4, "fps": 3 },
+        "mortar":       { "row": 9, "frames": 1, "fps": 1 },
+        "laser":        { "row": 10, "frames": 4, "fps": 6 },
+        "sixshooter":   { "row": 11, "frames": 2, "fps": 6 },
+        "dynamite":     { "row": 12, "frames": 4, "fps": 5 },
+        "grapeshot":    { "row": 13, "frames": 4, "fps": 6 },
+        "harpoon":      { "row": 14, "frames": 2, "fps": 5 },
+        "raygun":       { "row": 15, "frames": 4, "fps": 6 },
+        "ioncannon":    { "row": 16, "frames": 4, "fps": 5 }
+      }
+    },
+
+    "projectiles": {
+      "file": "projectiles.png",
+      "fw": 48,
+      "fh": 48,
+      "sprites": {
+        "bullet": { "row": 0, "frames": 4, "fps": 16 },
+        "shell":  { "row": 1, "frames": 4, "fps": 16 },
+        "shard":  { "row": 2, "frames": 4, "fps": 16 },
+        "glob":   { "row": 3, "frames": 4, "fps": 16 },
+        "slug":   { "row": 4, "frames": 4, "fps": 16 },
+        "flame":  { "row": 5, "frames": 4, "fps": 18 },
+        "rocket": { "row": 6, "frames": 4, "fps": 12 }
+      }
+    },
+
+    "fx": {
+      "file": "fx.png",
+      "fw": 96,
+      "fh": 96,
+      "sprites": {
+        "impact":  { "row": 0, "frames": 8, "fps": 24 },
+        "splash":  { "row": 1, "frames": 8, "fps": 24 },
+        "spawn":   { "row": 2, "frames": 8, "fps": 20 },
+        "leak":    { "row": 3, "frames": 8, "fps": 20 },
+        "pop":     { "row": 4, "frames": 8, "fps": 26 },
+        "boom":    { "row": 5, "frames": 8, "fps": 26 },
+        "goo":     { "row": 6, "frames": 8, "fps": 22 },
+        "burn":    { "row": 7, "frames": 8, "fps": 24 },
+        "zap":     { "row": 8, "frames": 8, "fps": 30 },
+        "shatter": { "row": 9, "frames": 8, "fps": 26 },
+        "coins":   { "row": 10, "frames": 8, "fps": 24 },
+        "shadow":  { "row": 11, "frames": 1, "fps": 1 },
+
+        "muzzle":   { "row": 12, "frames": 6, "fps": 40 },
+        "smoke":    { "row": 13, "frames": 8, "fps": 12 },
+        "spark":    { "row": 14, "frames": 6, "fps": 30 },
+        "dust":     { "row": 15, "frames": 8, "fps": 10 },
+
+        "_shield_note": "The barrier under a shielded enemy. One frame, because the renderer scales and tints it by how much of the pool is left rather than animating it.",
+        "shield":   { "row": 16, "frames": 1, "fps": 1 },
+
+        "_beam_note": "A soft-edged bar, stretched along its own length by the beam batch and tinted per effect. Exists because WebGL ignores line width, so beams cannot be drawn as lines.",
+        "beam":     { "row": 17, "frames": 1, "fps": 1 },
+
+        "_weather_note": "Weather particles. Rain is a thin streak inside a square frame, so the renderer can scale the frame up until the streak reads as a line without the quad ever being non-square.",
+        "rain":     { "row": 18, "frames": 1, "fps": 1 },
+        "flake":    { "row": 19, "frames": 1, "fps": 1 },
+        "mote":     { "row": 20, "frames": 1, "fps": 1 }
+      }
+    },
+
+    "tiles": {
+      "file": "tiles.png",
+      "fw": 96,
+      "fh": 96,
+      "sprites": {
+        "buildable": { "row": 0, "col": 0, "frames": 1, "fps": 1 },
+        "road":      { "row": 0, "col": 1, "frames": 1, "fps": 1 },
+        "blocked":   { "row": 0, "col": 2, "frames": 1, "fps": 1 },
+        "spawn":     { "row": 0, "col": 3, "frames": 1, "fps": 1 },
+        "base":      { "row": 0, "col": 4, "frames": 1, "fps": 1 },
+        "bonus":     { "row": 0, "col": 5, "frames": 1, "fps": 1 }
+      }
+    },
+
+    "_bars_note": "Flat rects stretched non-uniformly to form enemy health bars. `fill` is pure white so the batch can tint it per enemy (green/amber/red).",
+    "bars": {
+      "file": "bars.png",
+      "fw": 64,
+      "fh": 64,
+      "sprites": {
+        "bg":   { "row": 0, "col": 0, "frames": 1, "fps": 1 },
+        "fill": { "row": 0, "col": 1, "frames": 1, "fps": 1 }
+      }
+    },
+
+    "_aircraft_note": "Aircraft a barracks fields. They carry their own shadow row rather than borrowing the fx sheet's, because a SpriteBatch is bound to one texture and the shadow has to be drawn under the aircraft in the same pass. Nose points +x like every other moving sprite. Row 2 is the shared shadow, so it has to stay last: the tank and anything added later go in front of it.",
+    "aircraft": {
+      "file": "aircraft.png",
+      "fw": 96,
+      "fh": 96,
+      "sprites": {
+        "fighter": { "row": 0, "frames": 4, "fps": 14 },
+        "bomber":  { "row": 1, "frames": 4, "fps": 8 },
+        "tank":    { "row": 2, "frames": 4, "fps": 5 },
+        "shadow":  { "row": 3, "frames": 1, "fps": 1 }
+      }
+    },
+
+    "decor": {
+      "file": "decor.png",
+      "fw": 96,
+      "fh": 96,
+      "sprites": {
+        "wave":      { "row": 0, "col": 0, "frames": 1, "fps": 1 },
+        "wave_two":  { "row": 0, "col": 1, "frames": 1, "fps": 1 },
+        "diag_up":   { "row": 0, "col": 2, "frames": 1, "fps": 1 },
+        "diag_down": { "row": 0, "col": 3, "frames": 1, "fps": 1 },
+        "cross":     { "row": 1, "col": 0, "frames": 1, "fps": 1 },
+        "stream":    { "row": 1, "col": 1, "frames": 1, "fps": 1 },
+        "contours":  { "row": 1, "col": 2, "frames": 1, "fps": 1 },
+        "stipple":   { "row": 1, "col": 3, "frames": 1, "fps": 1 }
+      }
+    }
+  }
+}

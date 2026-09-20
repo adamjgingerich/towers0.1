@@ -1,0 +1,37 @@
+{
+  "_comment": "Generated height field, one per map. Value noise seeded from the map text, so a level's ridges and valleys are identical on every reload and for every player. Bands are checked low to high: the last band whose `min` is at or below the tile's height wins. Tower multipliers apply to a tower built on the tile; enemy multipliers apply to an enemy standing on it.",
+
+  "_design": "Every band is two-sided on purpose. High ground adds range but costs damage; low ground does the reverse. Enemies on high ground are slower but take less damage; enemies in valleys are faster but take more. Nothing is a free win, and the map's shape becomes part of the build decision.",
+
+  "resolution": 7,
+  "octaves": 3,
+  "persistence": 0.5,
+
+  "_bands_note": "min is a fraction of the normalised height field, so every map spans the full range from Valley to Peak.",
+  "bands": [
+    {
+      "name": "Valley",
+      "min": 0.0,
+      "tower": { "range": 0.86, "damage": 1.14 },
+      "enemy": { "speed": 1.12, "damage_taken": 1.1 }
+    },
+    {
+      "name": "Lowland",
+      "min": 0.34,
+      "tower": { "range": 0.95, "damage": 1.05 },
+      "enemy": { "speed": 1.04, "damage_taken": 1.04 }
+    },
+    {
+      "name": "Highland",
+      "min": 0.66,
+      "tower": { "range": 1.06, "damage": 0.97 },
+      "enemy": { "speed": 0.96, "damage_taken": 0.97 }
+    },
+    {
+      "name": "Peak",
+      "min": 0.87,
+      "tower": { "range": 1.18, "damage": 0.88 },
+      "enemy": { "speed": 0.88, "damage_taken": 0.92 }
+    }
+  ]
+}

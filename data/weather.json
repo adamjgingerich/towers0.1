@@ -1,0 +1,110 @@
+{
+  "_comment": "Weather. A spell lasts a few waves and shifts every tower and enemy on the board at once, so it changes what a build is WORTH without changing the build -- which is the one thing a difficulty multiplier cannot do. `effects` are plain multipliers where 1.0 is neutral.",
+
+  "_trade_comment": "Every type is a trade, never a pure penalty. Rain costs range but slows what is walking through it; hot sun boosts damage but cooks the reload; fog is nearly all cost but pays a little accuracy back. Weather that is only ever bad is a difficulty slider with a different name, and the player would just wait it out.",
+
+  "_visual_comment": "`tint` and `alpha` drive a full-board translucent wash, and `particles` picks the falling/drifting art. Both are deliberately restrained: the wash has to be visible without hiding the lane, so alpha stays under 0.12 and the particles do the identifying.",
+
+  "_timing_comment": "first_wave keeps the opening clear so weather cannot decide the first few waves, where the game is at its most knife-edge. Spells last min_waves..max_waves waves, and `clear` is in the pool with real weight, so calm stretches happen on their own rather than being special-cased.",
+
+  "first_wave": 3,
+  "min_waves": 2,
+  "max_waves": 4,
+
+  "types": [
+    {
+      "key": "clear",
+      "name": "Clear",
+      "description": "Nothing in the air but the fighting.",
+      "weight": 2.0,
+      "tint": "#ffffff",
+      "alpha": 0.0,
+      "particles": "none",
+      "effects": {}
+    },
+
+    {
+      "key": "rain",
+      "name": "Rain",
+      "description": "Wet air shortens effective range and slows the reload, but the ground turns to mud under everything walking on it.",
+      "weight": 3.0,
+      "tint": "#6f92c8",
+      "alpha": 0.10,
+      "particles": "rain",
+      "effects": {
+        "tower": { "damage": 0.94, "rate": 0.94, "range": 0.88 },
+        "enemy": { "speed": 0.95 }
+      }
+    },
+
+    {
+      "key": "snow",
+      "name": "Snow",
+      "description": "Drifts bog the lane down badly, but the cold stiffens every mechanism on the board.",
+      "weight": 2.4,
+      "tint": "#cfe4f5",
+      "alpha": 0.09,
+      "particles": "snow",
+      "effects": {
+        "tower": { "rate": 0.92, "range": 0.92 },
+        "enemy": { "speed": 0.85 }
+      }
+    },
+
+    {
+      "key": "sleet",
+      "name": "Sleet",
+      "description": "The worst of both: half-frozen ground slows the enemy, and ice in the workings slows you more.",
+      "weight": 2.0,
+      "tint": "#9fb8cc",
+      "alpha": 0.11,
+      "particles": "sleet",
+      "effects": {
+        "tower": { "damage": 0.96, "rate": 0.88, "range": 0.9 },
+        "enemy": { "speed": 0.82 }
+      }
+    },
+
+    {
+      "key": "sun",
+      "name": "Hot sun",
+      "description": "Clear air and long sight lines sharpen every hit, but the heat cooks the reload and the enemy moves with the shade.",
+      "weight": 2.4,
+      "tint": "#e8b45a",
+      "alpha": 0.09,
+      "particles": "sun",
+      "effects": {
+        "tower": { "damage": 1.14, "rate": 0.92 },
+        "enemy": { "speed": 1.1 }
+      }
+    },
+
+    {
+      "key": "storm",
+      "name": "Thunderstorm",
+      "description": "The charged air puts real force behind every shot, and squall lines cut the range badly.",
+      "weight": 2.0,
+      "tint": "#6f7fa8",
+      "alpha": 0.12,
+      "particles": "storm",
+      "effects": {
+        "tower": { "damage": 1.1, "range": 0.86 },
+        "enemy": { "speed": 0.96 }
+      }
+    },
+
+    {
+      "key": "fog",
+      "name": "Fog",
+      "description": "You cannot see what you are shooting at, so range collapses -- but at the distances left, every shot tells.",
+      "weight": 2.0,
+      "tint": "#b9c2cc",
+      "alpha": 0.11,
+      "particles": "fog",
+      "effects": {
+        "tower": { "damage": 1.06, "range": 0.8 },
+        "enemy": { "speed": 0.94 }
+      }
+    }
+  ]
+}

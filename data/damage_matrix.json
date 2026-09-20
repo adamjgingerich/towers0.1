@@ -1,0 +1,40 @@
+{
+  "_comment": "Armor is flat subtraction scaled by armor_mult. class_mult keys match enemy.armor_class. shield_mult applies while an enemy's shield pool is up -- it is the multiplier on damage that is about to be absorbed, so it decides how expensive it is to strip the barrier rather than how much health is lost. damage_floor guarantees no matchup is fully immune.",
+
+  "_shield_comment": "Only the Bulwark has a shield, so these numbers affect exactly one enemy and nothing else. The spread is deliberately wide: physical 0.5 vs energy 1.5 is a 3x swing, which is what makes \"bring a tesla\" a real answer rather than a marginal one. Poison sits near 1.0 because it is a damage-over-time type and a pool that refills already counters chip damage on its own.",
+
+  "damage_floor": 0.10,
+
+  "types": {
+    "physical": {
+      "label": "Physical",
+      "armor_mult": 1.0,
+      "class_mult": { "light": 1.0, "armored": 1.0 },
+      "shield_mult": 0.5
+    },
+    "energy": {
+      "label": "Energy",
+      "armor_mult": 0.5,
+      "class_mult": { "light": 1.0, "armored": 1.0 },
+      "shield_mult": 1.5
+    },
+    "poison": {
+      "label": "Poison",
+      "armor_mult": 0.0,
+      "class_mult": { "light": 1.0, "armored": 1.0 },
+      "shield_mult": 0.6
+    },
+    "ice": {
+      "label": "Ice",
+      "armor_mult": 1.0,
+      "class_mult": { "light": 1.0, "armored": 1.0 },
+      "shield_mult": 1.0
+    },
+    "fire": {
+      "label": "Fire",
+      "armor_mult": 1.0,
+      "class_mult": { "light": 1.5, "armored": 0.5 },
+      "shield_mult": 1.0
+    }
+  }
+}

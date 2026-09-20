@@ -1,0 +1,94 @@
+{
+  "_comment": "Persistent meta-progression skill tree. A node is bought with Cores (earned across every run, per character) and applies to every map from the next run onward. Effects are either flat adds or multipliers; a node with `maxRank` above 1 can be bought repeatedly, with each rank costing `cost * costGrowth^rank`. `requires` lists node ids that must have at least one rank before this node opens.",
+
+  "currency": "Cores",
+
+  "_branch_note": "Four branches, each one a different answer to 'what will win me the next run'. Economy makes you richer, Warfare makes your towers stronger, Engineering makes progression cheaper, Fortification keeps the base alive. Choices matter because Cores are scarce: two mutually exclusive paths share every branch, and the deeper nodes only open once you have committed.",
+
+  "branches": [
+    { "key": "economy",       "name": "Economy",       "color": "#ffd166" },
+    { "key": "warfare",       "name": "Warfare",       "color": "#ff8a8a" },
+    { "key": "engineering",   "name": "Engineering",   "color": "#8fc2e8" },
+    { "key": "fortification", "name": "Fortification", "color": "#9ed08c" }
+  ],
+
+  "nodes": [
+    { "id": "eco_tithe", "name": "War Tithe", "branch": "economy", "cost": 5, "maxRank": 3, "costGrowth": 1.6, "requires": [],
+      "desc": "A levy on every cleared wave. +25 starting coins per rank.",
+      "effects": [{ "stat": "startCoins", "kind": "flat", "value": 25 }] },
+
+    { "id": "eco_chest", "name": "War Chest", "branch": "economy", "cost": 12, "maxRank": 3, "costGrowth": 1.7, "requires": ["eco_tithe"],
+      "desc": "A deeper treasury for the opening minutes. +45 starting coins per rank.",
+      "effects": [{ "stat": "startCoins", "kind": "flat", "value": 45 }] },
+
+    { "id": "eco_mint", "name": "Mint", "branch": "economy", "cost": 10, "maxRank": 3, "costGrowth": 1.7, "requires": ["eco_tithe"],
+      "desc": "Your hoard compounds harder. +0.3% savings interest floor per rank.",
+      "effects": [{ "stat": "interestBase", "kind": "flat", "value": 0.003 }] },
+
+    { "id": "eco_victory", "name": "Victory Bonus", "branch": "economy", "cost": 12, "maxRank": 3, "costGrowth": 1.7, "requires": ["eco_chest"],
+      "desc": "Celebration pays. +4 coins to every wave-clear bonus per rank.",
+      "effects": [{ "stat": "waveBonus", "kind": "flat", "value": 4 }] },
+
+    { "id": "eco_salvage", "name": "Salvage Rights", "branch": "economy", "cost": 14, "maxRank": 2, "costGrowth": 2.0, "requires": ["eco_chest"],
+      "desc": "You keep more of what you tear down. +4% sell refund per rank.",
+      "effects": [{ "stat": "sellRefund", "kind": "flat", "value": 0.04 }] },
+
+    { "id": "war_marks", "name": "Marksmanship", "branch": "warfare", "cost": 8, "maxRank": 5, "costGrowth": 1.5, "requires": [],
+      "desc": "Every gun hits harder. +5% tower damage per rank.",
+      "effects": [{ "stat": "towerDamage", "kind": "mult", "value": 1.05 }] },
+
+    { "id": "war_reach", "name": "Long Barrels", "branch": "warfare", "cost": 10, "maxRank": 3, "costGrowth": 1.6, "requires": ["war_marks"],
+      "desc": "Engage from further out. +4% tower range per rank.",
+      "effects": [{ "stat": "towerRange", "kind": "mult", "value": 1.04 }] },
+
+    { "id": "war_rapid", "name": "Rapid Cycle", "branch": "warfare", "cost": 10, "maxRank": 3, "costGrowth": 1.6, "requires": ["war_marks"],
+      "desc": "Faster action, faster fire. +4% tower fire rate per rank.",
+      "effects": [{ "stat": "towerRate", "kind": "mult", "value": 1.04 }] },
+
+    { "id": "war_crit", "name": "Lucky Shots", "branch": "warfare", "cost": 18, "maxRank": 3, "costGrowth": 1.8, "requires": ["war_reach", "war_rapid"],
+      "desc": "Weak points reveal themselves. +2% crit chance per rank.",
+      "effects": [{ "stat": "critChance", "kind": "flat", "value": 0.02 }] },
+
+    { "id": "war_overkill", "name": "Overkill", "branch": "warfare", "cost": 24, "maxRank": 3, "costGrowth": 1.8, "requires": ["war_crit"],
+      "desc": "There is no such thing as too much gun. +6% tower damage per rank.",
+      "effects": [{ "stat": "towerDamage", "kind": "mult", "value": 1.06 }] },
+
+    { "id": "eng_blueprints", "name": "Field Blueprints", "branch": "engineering", "cost": 8, "maxRank": 4, "costGrowth": 1.5, "requires": [],
+      "desc": "Standardised parts are cheaper to bolt on. -4% upgrade cost per rank.",
+      "effects": [{ "stat": "upgradeCost", "kind": "mult", "value": 0.96 }] },
+
+    { "id": "eng_tooling", "name": "Precision Tooling", "branch": "engineering", "cost": 12, "maxRank": 3, "costGrowth": 1.6, "requires": ["eng_blueprints"],
+      "desc": "Specialisation kits assemble themselves. -4% specialisation cost per rank.",
+      "effects": [{ "stat": "specCost", "kind": "mult", "value": 0.96 }] },
+
+    { "id": "eng_veteran", "name": "Veteran Crew", "branch": "engineering", "cost": 20, "maxRank": 2, "costGrowth": 2.2, "requires": ["eng_blueprints"],
+      "desc": "Your gunners arrive with scars already. Towers start +1 level per rank.",
+      "effects": [{ "stat": "startLevel", "kind": "flat", "value": 1 }] },
+
+    { "id": "eng_garrison", "name": "Garrison", "branch": "engineering", "cost": 25, "maxRank": 3, "costGrowth": 1.9, "requires": ["eng_tooling", "eng_veteran"],
+      "desc": "Room for one more gun, always. +1 tower capacity per rank.",
+      "effects": [{ "stat": "towerCap", "kind": "flat", "value": 1 }] },
+
+    { "id": "for_bulwark", "name": "Bulwark", "branch": "fortification", "cost": 6, "maxRank": 5, "costGrowth": 1.5, "requires": [],
+      "desc": "Thicker walls at home. +8 base health per rank.",
+      "effects": [{ "stat": "baseHp", "kind": "flat", "value": 8 }] },
+
+    { "id": "for_bastion", "name": "Bastion", "branch": "fortification", "cost": 14, "maxRank": 3, "costGrowth": 1.7, "requires": ["for_bulwark"],
+      "desc": "A fortress, not a gate. +14 base health per rank.",
+      "effects": [{ "stat": "baseHp", "kind": "flat", "value": 14 }] },
+
+    { "id": "for_militia", "name": "Militia", "branch": "fortification", "cost": 15, "maxRank": 3, "costGrowth": 1.7, "requires": ["for_bulwark"],
+      "desc": "The locals pitch in. +25 starting coins and +8 base health per rank.",
+      "effects": [
+        { "stat": "startCoins", "kind": "flat", "value": 25 },
+        { "stat": "baseHp", "kind": "flat", "value": 8 }
+      ] },
+
+    { "id": "for_holdfast", "name": "Holdfast", "branch": "fortification", "cost": 30, "maxRank": 2, "costGrowth": 2.0, "requires": ["for_bastion", "for_militia"],
+      "desc": "The last redoubt. +10 base health and +1 tower capacity per rank.",
+      "effects": [
+        { "stat": "baseHp", "kind": "flat", "value": 10 },
+        { "stat": "towerCap", "kind": "flat", "value": 1 }
+      ] }
+  ]
+}

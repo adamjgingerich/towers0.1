@@ -1,0 +1,1061 @@
+{
+  "_comment": "Branching upgrades, keyed by tower. Each tower has a list of tiers; a tier unlocks once the tower reaches `tier` and stays pending until the player picks one option. `mult` multiplies a stat, `add` is additive (integers like chain_count), `override` replaces a value outright, and `flags` grant new mechanics the sim understands. See docs/DESIGN.md.",
+
+  "_flags": {
+    "crit_chance": "0..1 chance a hit deals crit_mult times damage",
+    "crit_mult": "damage multiplier on a crit",
+    "execute_below": "instant kills an enemy under this fraction of max hp",
+    "burn_dps": "damage per second applied after the hit (fire type, respects armour)",
+    "burn_duration": "seconds the burn lasts",
+    "burn_stacks": "how many burns can stack on one enemy",
+    "armor_shred": "flat armour removed from the target for armor_shred_duration",
+    "armor_shred_duration": "seconds the armour reduction lasts",
+    "bounty_mult": "coin multiplier when this tower lands the killing blow",
+    "true_damage": "1 = this tower's hits ignore armour entirely",
+    "pierce": "extra enemies a projectile can pass through",
+    "allow_air": "1 = lift the ground_only restriction",
+    "allow_ground": "1 = lift the air_only restriction"
+  },
+
+  "basic": [
+    {
+      "tier": 5,
+      "options": [
+        {
+          "key": "rifled",
+          "name": "Rifled Barrel",
+          "blurb": "A longer, tighter barrel. +45% range and +60% shell speed.",
+          "mult": { "range": 1.45, "projectile_speed": 1.6 }
+        },
+        {
+          "key": "hollowpoint",
+          "name": "Hollowpoint",
+          "blurb": "+45% damage, -18% rate. 20% chance of a 2.5x crit.",
+          "mult": { "damage": 1.45, "rate": 0.82 },
+          "flags": { "crit_chance": 0.2, "crit_mult": 2.5 }
+        }
+      ]
+    },
+
+    {
+      "tier": 10,
+      "options": [
+        {
+          "key": "ap_rounds",
+          "name": "Armour-Piercing Rounds",
+          "blurb": "Hardened penetrators ignore armour entirely. +45% damage.",
+          "mult": { "damage": 1.45 },
+          "flags": { "true_damage": 1 }
+        },
+        {
+          "key": "overpressure",
+          "name": "Overpressure Loads",
+          "blurb": "A hotter charge. +35% damage and +20% rate.",
+          "mult": { "damage": 1.35, "rate": 1.2 }
+        }
+      ]
+    },
+
+    {
+      "tier": 15,
+      "options": [
+        {
+          "key": "flechette",
+          "name": "Flechette Rounds",
+          "blurb": "Slivers punch clean through: shots pass through 2 more enemies, +30% damage.",
+          "mult": { "damage": 1.3 },
+          "flags": { "pierce": 2 }
+        },
+        {
+          "key": "gyro_stabiliser",
+          "name": "Gyro Stabiliser",
+          "blurb": "A steadier mount. +30% rate, +15% range, +15% damage.",
+          "mult": { "rate": 1.3, "range": 1.15, "damage": 1.15 }
+        }
+      ]
+    },
+
+    {
+      "tier": 20,
+      "options": [
+        {
+          "key": "mass_production",
+          "name": "Mass Production",
+          "blurb": "Standardised everywhere. +45% damage, +15% rate, +30% bounty.",
+          "mult": { "damage": 1.45, "rate": 1.15, "bounty_mult": 1.3 }
+        },
+        {
+          "key": "depleted_uranium",
+          "name": "Depleted Uranium",
+          "blurb": "Self-sharpening and pyrophoric. +50% damage, +10% rate, ignores armour.",
+          "mult": { "damage": 1.5, "rate": 1.1 },
+          "flags": { "true_damage": 1 }
+        }
+      ]
+    }
+  ],
+
+  "cannon": [
+    {
+      "tier": 5,
+      "options": [
+        {
+          "key": "cluster",
+          "name": "Cluster Shells",
+          "blurb": "+60% blast radius, -20% damage. Covers the whole lane.",
+          "mult": { "splash_radius": 1.6, "damage": 0.8 }
+        },
+        {
+          "key": "heat",
+          "name": "HEAT Shells",
+          "blurb": "Shaped charge. Hits ignore armour entirely, -15% damage.",
+          "mult": { "damage": 0.85 },
+          "flags": { "true_damage": 1 }
+        }
+      ]
+    },
+
+    {
+      "tier": 10,
+      "options": [
+        {
+          "key": "heavy_charge",
+          "name": "Heavy Charge",
+          "blurb": "Less propellant, more explosive. +50% damage.",
+          "mult": { "damage": 1.5 }
+        },
+        {
+          "key": "fragmentation",
+          "name": "Fragmentation Shell",
+          "blurb": "+45% blast radius and +10% damage.",
+          "mult": { "splash_radius": 1.45, "damage": 1.1 }
+        }
+      ]
+    },
+
+    {
+      "tier": 15,
+      "options": [
+        {
+          "key": "autoloader",
+          "name": "Autoloader",
+          "blurb": "A mechanical rammer. +50% rate.",
+          "mult": { "rate": 1.5, "damage": 1.05 }
+        },
+        {
+          "key": "airburst_refit",
+          "name": "Airburst Refit",
+          "blurb": "Proximity fuses let the cannon finally engage flyers. +20% blast.",
+          "mult": { "splash_radius": 1.2 },
+          "flags": { "allow_air": 1 }
+        }
+      ]
+    },
+
+    {
+      "tier": 20,
+      "options": [
+        {
+          "key": "siege_conversion",
+          "name": "Siege Conversion",
+          "blurb": "A longer barrel and a bigger charge. +60% damage, +20% range, -5% rate.",
+          "mult": { "damage": 1.6, "range": 1.2, "rate": 0.95 }
+        },
+        {
+          "key": "carpet_bombardment",
+          "name": "Carpet Bombardment",
+          "blurb": "Everything in the square dies. +60% blast radius, +30% damage.",
+          "mult": { "splash_radius": 1.6, "damage": 1.3 }
+        }
+      ]
+    }
+  ],
+
+  "frost": [
+    {
+      "tier": 5,
+      "options": [
+        {
+          "key": "deepfreeze",
+          "name": "Deep Freeze",
+          "blurb": "Slows to 45% instead of 65% and lasts 50% longer. -20% damage.",
+          "mult": { "slow_duration": 1.5, "damage": 0.8 },
+          "override": { "slow_factor": 0.45 }
+        },
+        {
+          "key": "shatter",
+          "name": "Shatter",
+          "blurb": "+150% damage and instantly kills anything under 12% health.",
+          "mult": { "damage": 2.5, "rate": 0.85 },
+          "flags": { "execute_below": 0.12 }
+        }
+      ]
+    },
+
+    {
+      "tier": 10,
+      "options": [
+        {
+          "key": "cryo_core",
+          "name": "Cryo Core",
+          "blurb": "A colder, longer-lasting charge. Chills last 50% longer and bite deeper.",
+          "mult": { "slow_duration": 1.5 },
+          "override": { "slow_factor": 0.55 }
+        },
+        {
+          "key": "shardstorm",
+          "name": "Shard Storm",
+          "blurb": "Ice splinters rather than a single shard. +40% damage, +10% rate.",
+          "mult": { "damage": 1.4, "rate": 1.1 }
+        }
+      ]
+    },
+
+    {
+      "tier": 15,
+      "options": [
+        {
+          "key": "absolute_zero",
+          "name": "Absolute Zero",
+          "blurb": "Targets are slowed to a crawl, and +30% damage.",
+          "mult": { "damage": 1.3 },
+          "override": { "slow_factor": 0.35 }
+        },
+        {
+          "key": "frostbite",
+          "name": "Frostbite",
+          "blurb": "+40% damage, and finishing blows shatter anything under 8% health.",
+          "mult": { "damage": 1.4, "rate": 0.95 },
+          "flags": { "execute_below": 0.08 }
+        }
+      ]
+    },
+
+    {
+      "tier": 20,
+      "options": [
+        {
+          "key": "glacier",
+          "name": "Glacier",
+          "blurb": "A wall of ice. Chills last 60% longer and slow to 30%, +30% damage.",
+          "mult": { "slow_duration": 1.6, "damage": 1.3 },
+          "override": { "slow_factor": 0.3 }
+        },
+        {
+          "key": "permafrost",
+          "name": "Permafrost",
+          "blurb": "Ice that never thaws. +45% damage and hits ignore armour.",
+          "mult": { "damage": 1.45, "rate": 0.95 },
+          "flags": { "true_damage": 1 }
+        }
+      ]
+    }
+  ],
+
+  "tesla": [
+    {
+      "tier": 5,
+      "options": [
+        {
+          "key": "superconduct",
+          "name": "Superconductor",
+          "blurb": "+3 chained targets, +50% chain range, and barely any falloff.",
+          "add": { "chain_count": 3 },
+          "mult": { "chain_range": 1.5 },
+          "override": { "chain_falloff": 0.92 }
+        },
+        {
+          "key": "overload",
+          "name": "Overload",
+          "blurb": "+80% damage, -25% rate. 20% chance of a 3x crit.",
+          "mult": { "damage": 1.8, "rate": 0.75 },
+          "flags": { "crit_chance": 0.2, "crit_mult": 3.0 }
+        }
+      ]
+    },
+
+    {
+      "tier": 10,
+      "options": [
+        {
+          "key": "arc_amplifier",
+          "name": "Arc Amplifier",
+          "blurb": "A fatter, hotter arc. +30% damage.",
+          "mult": { "damage": 1.3 }
+        },
+        {
+          "key": "capacitor_bank",
+          "name": "Capacitor Bank",
+          "blurb": "Stored charge discharges faster. +35% rate, +5% damage.",
+          "mult": { "rate": 1.35, "damage": 1.05 }
+        }
+      ]
+    },
+
+    {
+      "tier": 15,
+      "options": [
+        {
+          "key": "ball_lightning",
+          "name": "Ball Lightning",
+          "blurb": "The arc lingers and wanders. +3 chained targets, +30% chain range.",
+          "add": { "chain_count": 3 },
+          "mult": { "chain_range": 1.3, "damage": 1.1 }
+        },
+        {
+          "key": "ionised_air",
+          "name": "Ionised Air",
+          "blurb": "The air itself conducts. +30% damage and hits ignore armour.",
+          "mult": { "damage": 1.3 },
+          "flags": { "true_damage": 1 }
+        }
+      ]
+    },
+
+    {
+      "tier": 20,
+      "options": [
+        {
+          "key": "storm_front",
+          "name": "Storm Front",
+          "blurb": "A standing thunderstorm. +4 chained targets, +15% damage, +20% chain range.",
+          "add": { "chain_count": 4 },
+          "mult": { "damage": 1.15, "chain_range": 1.2 }
+        },
+        {
+          "key": "overload_core",
+          "name": "Overload Core",
+          "blurb": "Everything discharges at once. +35% damage, +10% rate, -10% range.",
+          "mult": { "damage": 1.35, "rate": 1.1, "range": 0.9 }
+        }
+      ]
+    }
+  ],
+
+  "venom": [
+    {
+      "tier": 5,
+      "options": [
+        {
+          "key": "necrosis",
+          "name": "Necrosis",
+          "blurb": "+80% poison damage and room for two more stacks.",
+          "mult": { "poison_dps": 1.8 },
+          "add": { "poison_max_stacks": 2 }
+        },
+        {
+          "key": "corrosive",
+          "name": "Corrosive Venom",
+          "blurb": "+25% poison. Melts 6 armour off the target for 4s, for every other tower too.",
+          "mult": { "poison_dps": 1.25 },
+          "flags": { "armor_shred": 6, "armor_shred_duration": 4 }
+        }
+      ]
+    },
+
+    {
+      "tier": 10,
+      "options": [
+        {
+          "key": "virulence",
+          "name": "Virulence",
+          "blurb": "A nastier strain. +55% poison damage.",
+          "mult": { "poison_dps": 1.55 }
+        },
+        {
+          "key": "carrier_agent",
+          "name": "Carrier Agent",
+          "blurb": "It clings and lingers. Poison lasts 50% longer, +15% rate.",
+          "mult": { "poison_duration": 1.5, "rate": 1.15 }
+        }
+      ]
+    },
+
+    {
+      "tier": 15,
+      "options": [
+        {
+          "key": "plague_bloom",
+          "name": "Plague Bloom",
+          "blurb": "Room for 3 more stacks of poison, and it lingers 30% longer.",
+          "add": { "poison_max_stacks": 3 },
+          "mult": { "poison_duration": 1.3, "poison_dps": 1.15 }
+        },
+        {
+          "key": "necrotic_bite",
+          "name": "Necrotic Bite",
+          "blurb": "The glob itself does damage now: +40% impact, +25% poison, shatters anything under 8% health.",
+          "mult": { "damage": 1.4, "poison_dps": 1.25 },
+          "flags": { "execute_below": 0.08 }
+        }
+      ]
+    },
+
+    {
+      "tier": 20,
+      "options": [
+        {
+          "key": "pandemic",
+          "name": "Pandemic",
+          "blurb": "4 more stacks, 50% longer, +30% poison damage.",
+          "add": { "poison_max_stacks": 4 },
+          "mult": { "poison_duration": 1.5, "poison_dps": 1.3 }
+        },
+        {
+          "key": "venom_lance",
+          "name": "Venom Lance",
+          "blurb": "One enormous dose. +60% poison damage, +10% rate, +20% range.",
+          "mult": { "poison_dps": 1.6, "rate": 1.1, "range": 1.2 }
+        }
+      ]
+    }
+  ],
+
+  "sniper": [
+    {
+      "tier": 5,
+      "options": [
+        {
+          "key": "headhunter",
+          "name": "Headhunter",
+          "blurb": "35% chance to deal triple damage. Nothing survives a good roll.",
+          "flags": { "crit_chance": 0.35, "crit_mult": 3.0 }
+        },
+        {
+          "key": "railgun",
+          "name": "Railgun",
+          "blurb": "+100% damage, +25% range, and hits ignore armour. -25% rate.",
+          "mult": { "damage": 2.0, "range": 1.25, "rate": 0.75 },
+          "flags": { "true_damage": 1 }
+        }
+      ]
+    },
+
+    {
+      "tier": 10,
+      "options": [
+        {
+          "key": "match_barrel",
+          "name": "Match Barrel",
+          "blurb": "Hand-lapped and bedded. +50% damage, +10% range.",
+          "mult": { "damage": 1.5, "range": 1.1 }
+        },
+        {
+          "key": "quick_bolt",
+          "name": "Quick Bolt",
+          "blurb": "A lighter action cycles faster. +50% rate, +5% damage.",
+          "mult": { "rate": 1.5, "damage": 1.05 }
+        }
+      ]
+    },
+
+    {
+      "tier": 15,
+      "options": [
+        {
+          "key": "apfsds",
+          "name": "APFSDS",
+          "blurb": "A tungsten dart at four times the speed. +35% damage and hits ignore armour.",
+          "mult": { "damage": 1.35 },
+          "flags": { "true_damage": 1 }
+        },
+        {
+          "key": "spotter_drone",
+          "name": "Spotter Drone",
+          "blurb": "Someone else finds the target. +30% range, +25% damage, +15% rate.",
+          "mult": { "range": 1.3, "damage": 1.25, "rate": 1.15 }
+        }
+      ]
+    },
+
+    {
+      "tier": 20,
+      "options": [
+        {
+          "key": "anti_materiel",
+          "name": "Anti-Materiel",
+          "blurb": "+40% damage, and anything under 10% health is simply removed.",
+          "mult": { "damage": 1.4 },
+          "flags": { "execute_below": 0.1 }
+        },
+        {
+          "key": "hypervelocity",
+          "name": "Hypervelocity",
+          "blurb": "+30% damage and +25% rate. The bolt arrives before the sound does.",
+          "mult": { "damage": 1.3, "rate": 1.25 }
+        }
+      ]
+    }
+  ],
+
+  "gatling": [
+    {
+      "tier": 5,
+      "options": [
+        {
+          "key": "incendiary",
+          "name": "Incendiary",
+          "blurb": "Rounds set the target alight: 8/s for 3s, stacking 3 times.",
+          "mult": { "damage": 0.9 },
+          "flags": { "burn_dps": 8, "burn_duration": 3, "burn_stacks": 3 }
+        },
+        {
+          "key": "sabot",
+          "name": "Sabot Rounds",
+          "blurb": "Discarding-sabot penetrators ignore armour completely. -20% damage.",
+          "mult": { "damage": 0.8 },
+          "flags": { "true_damage": 1 }
+        }
+      ]
+    },
+
+    {
+      "tier": 10,
+      "options": [
+        {
+          "key": "belt_fed",
+          "name": "Belt Fed",
+          "blurb": "A deeper belt and a faster action. +60% rate, +5% damage.",
+          "mult": { "rate": 1.6, "damage": 1.05 }
+        },
+        {
+          "key": "heavy_rounds",
+          "name": "Heavy Rounds",
+          "blurb": "Bigger cartridge, slower action. +70% damage.",
+          "mult": { "damage": 1.7, "rate": 0.98 }
+        }
+      ]
+    },
+
+    {
+      "tier": 15,
+      "options": [
+        {
+          "key": "overdrive_motor",
+          "name": "Overdrive Motor",
+          "blurb": "The barrels spin far past their rating. +70% rate, +10% range.",
+          "mult": { "rate": 1.7, "range": 1.1 }
+        },
+        {
+          "key": "shredder_tips",
+          "name": "Shredder Tips",
+          "blurb": "Soft-nosed rounds tear armour off: 5 armour melted for 3s, and every other tower benefits too. +35% damage.",
+          "mult": { "damage": 1.35 },
+          "flags": { "armor_shred": 5, "armor_shred_duration": 3 }
+        }
+      ]
+    },
+
+    {
+      "tier": 20,
+      "options": [
+        {
+          "key": "wall_of_lead",
+          "name": "Wall of Lead",
+          "blurb": "+45% damage and +30% rate. Nothing walks through it.",
+          "mult": { "damage": 1.45, "rate": 1.3 }
+        },
+        {
+          "key": "scavenger",
+          "name": "Scavenger Rounds",
+          "blurb": "Cheap rounds, sold by the crate. +45% damage and +45% bounty.",
+          "mult": { "damage": 1.45, "bounty_mult": 1.45 }
+        }
+      ]
+    }
+  ],
+
+  "flamethrower": [
+    {
+      "tier": 5,
+      "options": [
+        {
+          "key": "napalm",
+          "name": "Napalm",
+          "blurb": "+60% cone width and the fire sticks: 20/s for 4s, stacking 3 times.",
+          "mult": { "splash_radius": 1.6, "rate": 0.9 },
+          "flags": { "burn_dps": 20, "burn_duration": 4, "burn_stacks": 3 }
+        },
+        {
+          "key": "bellows",
+          "name": "Pressure Bellows",
+          "blurb": "Forced-air burner. +60% range, +40% damage, -10% rate.",
+          "mult": { "range": 1.6, "damage": 1.4, "rate": 0.9 }
+        }
+      ]
+    },
+
+    {
+      "tier": 10,
+      "options": [
+        {
+          "key": "thickened_fuel",
+          "name": "Thickened Fuel",
+          "blurb": "Gel burns longer and hotter: +14/s burn for 1 extra second.",
+          "flags": { "burn_dps": 14, "burn_duration": 1 }
+        },
+        {
+          "key": "high_pressure_pump",
+          "name": "High-Pressure Pump",
+          "blurb": "+50% damage and +15% range.",
+          "mult": { "damage": 1.5, "range": 1.15 }
+        }
+      ]
+    },
+
+    {
+      "tier": 15,
+      "options": [
+        {
+          "key": "thermite_mix",
+          "name": "Thermite Mix",
+          "blurb": "Burns through steel plate. +40% damage and hits ignore armour.",
+          "mult": { "damage": 1.4 },
+          "flags": { "true_damage": 1 }
+        },
+        {
+          "key": "inferno",
+          "name": "Inferno",
+          "blurb": "The fire never goes out: +18/s burn and room for 2 more burns to stack.",
+          "flags": { "burn_dps": 18, "burn_stacks": 2 }
+        }
+      ]
+    },
+
+    {
+      "tier": 20,
+      "options": [
+        {
+          "key": "white_phosphorus",
+          "name": "White Phosphorus",
+          "blurb": "+24/s burn, +25% damage and +25% cone width.",
+          "mult": { "damage": 1.25, "splash_radius": 1.25 },
+          "flags": { "burn_dps": 24 }
+        },
+        {
+          "key": "firestorm",
+          "name": "Firestorm",
+          "blurb": "Every pump is a wall of flame. +55% damage, +15% rate.",
+          "mult": { "damage": 1.55, "rate": 1.15 }
+        }
+      ]
+    }
+  ],
+
+  "missile": [
+    {
+      "tier": 5,
+      "options": [
+        {
+          "key": "mirv",
+          "name": "MIRV",
+          "blurb": "The warhead splits. +80% blast radius, -20% damage.",
+          "mult": { "splash_radius": 1.8, "damage": 0.8 }
+        },
+        {
+          "key": "shaped",
+          "name": "Shaped Charge",
+          "blurb": "+90% damage and ignores armour, but -30% blast radius.",
+          "mult": { "damage": 1.9, "splash_radius": 0.7 },
+          "flags": { "true_damage": 1 }
+        }
+      ]
+    },
+
+    {
+      "tier": 10,
+      "options": [
+        {
+          "key": "proximity_fuse",
+          "name": "Proximity Fuse",
+          "blurb": "Detonates early and wide. +40% blast radius, +15% damage.",
+          "mult": { "splash_radius": 1.4, "damage": 1.15 }
+        },
+        {
+          "key": "two_stage_booster",
+          "name": "Two-Stage Booster",
+          "blurb": "A second motor: +50% damage and +15% range.",
+          "mult": { "damage": 1.5, "range": 1.15 }
+        }
+      ]
+    },
+
+    {
+      "tier": 15,
+      "options": [
+        {
+          "key": "swarm_rack",
+          "name": "Swarm Rack",
+          "blurb": "Fire more, faster. +55% rate, +5% damage.",
+          "mult": { "rate": 1.55, "damage": 1.05 }
+        },
+        {
+          "key": "ground_attack_mode",
+          "name": "Ground Attack Mode",
+          "blurb": "Re-tune the seeker and the battery can finally engage ground targets. +20% damage.",
+          "mult": { "damage": 1.2 },
+          "flags": { "allow_ground": 1 }
+        }
+      ]
+    },
+
+    {
+      "tier": 20,
+      "options": [
+        {
+          "key": "tandem_warhead",
+          "name": "Tandem Warhead",
+          "blurb": "A shaped precursor followed by the main charge. +55% damage, ignores armour.",
+          "mult": { "damage": 1.55 },
+          "flags": { "true_damage": 1 }
+        },
+        {
+          "key": "saturation_strike",
+          "name": "Saturation Strike",
+          "blurb": "Fire, and fire, and fire. +70% blast, +15% rate, +5% damage.",
+          "mult": { "splash_radius": 1.7, "rate": 1.15, "damage": 1.05 }
+        }
+      ]
+    }
+  ],
+
+  "mortar": [
+    {
+      "tier": 5,
+      "options": [
+        {
+          "key": "airburst",
+          "name": "Airburst Fuse",
+          "blurb": "Proximity fuse. Finally lets the mortar hit flyers, +15% blast.",
+          "mult": { "splash_radius": 1.15 },
+          "flags": { "allow_air": 1 }
+        },
+        {
+          "key": "thermobaric",
+          "name": "Thermobaric",
+          "blurb": "+70% blast radius, +40% damage, -20% rate. Everything burns.",
+          "mult": { "splash_radius": 1.7, "damage": 1.4, "rate": 0.8 }
+        }
+      ]
+    },
+
+    {
+      "tier": 10,
+      "options": [
+        {
+          "key": "base_plate",
+          "name": "Reinforced Base Plate",
+          "blurb": "It no longer buries itself. +35% rate.",
+          "mult": { "rate": 1.35 }
+        },
+        {
+          "key": "ranging_computer",
+          "name": "Ranging Computer",
+          "blurb": "Fires for effect at any distance. +35% damage, +10% range.",
+          "mult": { "damage": 1.35, "range": 1.1 }
+        }
+      ]
+    },
+
+    {
+      "tier": 15,
+      "options": [
+        {
+          "key": "cluster_munitions",
+          "name": "Cluster Munitions",
+          "blurb": "It breaks apart in the air. +35% blast radius, +10% damage.",
+          "mult": { "splash_radius": 1.35, "damage": 1.1 }
+        },
+        {
+          "key": "fuel_air_charge",
+          "name": "Fuel-Air Charge",
+          "blurb": "A cloud that detonates all at once. +35% damage, ignores armour.",
+          "mult": { "damage": 1.35 },
+          "flags": { "true_damage": 1 }
+        }
+      ]
+    },
+
+    {
+      "tier": 20,
+      "options": [
+        {
+          "key": "siege_bombard",
+          "name": "Siege Bombard",
+          "blurb": "A far heavier tube. +40% damage, +20% range, -5% rate.",
+          "mult": { "damage": 1.4, "range": 1.2, "rate": 0.95 }
+        },
+        {
+          "key": "earthshaker",
+          "name": "Earthshaker",
+          "blurb": "+40% blast radius and +10% rate. The whole lane moves.",
+          "mult": { "splash_radius": 1.4, "rate": 1.1 }
+        }
+      ]
+    }
+  ],
+
+  "laser": [
+    {
+      "tier": 5,
+      "options": [
+        {
+          "key": "sustained_beam",
+          "name": "Sustained Beam",
+          "blurb": "A longer pulse. +0.8s on target, +20% melt.",
+          "add": { "pulse_duration": 0.8 },
+          "mult": { "damage": 1.2 }
+        },
+        {
+          "key": "focusing_lens",
+          "name": "Focusing Lens",
+          "blurb": "A tighter column. +35% melt, +15% range.",
+          "mult": { "damage": 1.35, "range": 1.15 }
+        }
+      ]
+    },
+
+    {
+      "tier": 10,
+      "options": [
+        {
+          "key": "incendiary",
+          "name": "Incendiary Cell",
+          "blurb": "The beam sets its target alight. 10/s fire damage for 3s.",
+          "flags": { "burn_dps": 10, "burn_duration": 3.0, "burn_stacks": 1 }
+        },
+        {
+          "key": "melt_armour",
+          "name": "Melt Armour",
+          "blurb": "The beam boils plating away. -4 armour for 3s.",
+          "flags": { "armor_shred": 4, "armor_shred_duration": 3.0 }
+        }
+      ]
+    },
+
+    {
+      "tier": 15,
+      "options": [
+        {
+          "key": "overcharge",
+          "name": "Overcharge",
+          "blurb": "Cuts straight through armour entirely. +25% melt.",
+          "mult": { "damage": 1.25 },
+          "flags": { "true_damage": 1 }
+        },
+        {
+          "key": "excision",
+          "name": "Excision",
+          "blurb": "Cuts down any target under 25% health instantly.",
+          "flags": { "execute_below": 0.25 }
+        }
+      ]
+    },
+
+    {
+      "tier": 20,
+      "options": [
+        {
+          "key": "continuous_wave",
+          "name": "Continuous Wave",
+          "blurb": "+1.4s pulse and +30% melt. The beam barely stops.",
+          "add": { "pulse_duration": 1.4 },
+          "mult": { "damage": 1.3 }
+        },
+        {
+          "key": "heat_sink",
+          "name": "Cryo Heat Sink",
+          "blurb": "Ramps faster and higher. +0.45/s ramp, +35% ceiling.",
+          "add": { "ramp_per_sec": 0.45 },
+          "mult": { "ramp_max": 1.35 }
+        }
+      ]
+    }
+  ],
+
+  "sixshooter": [
+    {
+      "tier": 5,
+      "options": [
+        { "key": "fan_the_hammer", "name": "Fan the Hammer", "blurb": "Rattles off shots. +35% rate, 25% chance of a 2.5x crit.", "mult": { "rate": 1.35 }, "flags": { "crit_chance": 0.25, "crit_mult": 2.5 } },
+        { "key": "silver_bullets", "name": "Silver Bullets", "blurb": "Cut through anything supernatural. +35% damage, ignores armour.", "mult": { "damage": 1.35 }, "flags": { "true_damage": 1 } }
+      ]
+    },
+    {
+      "tier": 10,
+      "options": [
+        { "key": "gunslinger", "name": "Gunslinger", "blurb": "A steadier hand. +40% rate.", "mult": { "rate": 1.4 } },
+        { "key": "deadeye", "name": "Deadeye", "blurb": "Longer sight lines. +30% range, +25% damage.", "mult": { "range": 1.3, "damage": 1.25 } }
+      ]
+    },
+    {
+      "tier": 15,
+      "options": [
+        { "key": "ricochet", "name": "Ricochet", "blurb": "Bullets bounce through 2 more enemies.", "flags": { "pierce": 2 } },
+        { "key": "speed_loader", "name": "Speed Loader", "blurb": "Reload is a blur. +50% rate.", "mult": { "rate": 1.5 } }
+      ]
+    },
+    {
+      "tier": 20,
+      "options": [
+        { "key": "showdown", "name": "High Noon", "blurb": "One bullet, one body. 35% chance of a 3x crit, +30% damage.", "mult": { "damage": 1.3 }, "flags": { "crit_chance": 0.35, "crit_mult": 3.0 } },
+        { "key": "lone_ranger", "name": "Lone Ranger", "blurb": "Finishes what it starts. Cuts down targets under 20% health.", "mult": { "damage": 1.4 }, "flags": { "execute_below": 0.2 } }
+      ]
+    }
+  ],
+
+  "dynamite": [
+    {
+      "tier": 5,
+      "options": [
+        { "key": "blasting_caps", "name": "Blasting Caps", "blurb": "The blast sets everything alight. 14/s fire for 3s.", "flags": { "burn_dps": 14, "burn_duration": 3.0, "burn_stacks": 1 } },
+        { "key": "big_charge", "name": "Bigger Charge", "blurb": "+40% blast radius, +30% damage.", "mult": { "splash_radius": 1.4, "damage": 1.3 } }
+      ]
+    },
+    {
+      "tier": 10,
+      "options": [
+        { "key": "short_fuse", "name": "Short Fuse", "blurb": "Thrown and gone. +35% rate.", "mult": { "rate": 1.35 } },
+        { "key": "long_throw", "name": "Long Throw", "blurb": "+30% range.", "mult": { "range": 1.3 } }
+      ]
+    },
+    {
+      "tier": 15,
+      "options": [
+        { "key": "cluster", "name": "Cluster Charge", "blurb": "+35% blast, +15% damage.", "mult": { "splash_radius": 1.35, "damage": 1.15 } },
+        { "key": "phosphorus", "name": "Phosphorus", "blurb": "White-hot. 22/s fire for 4s, stacks twice.", "flags": { "burn_dps": 22, "burn_duration": 4.0, "burn_stacks": 2 } }
+      ]
+    },
+    {
+      "tier": 20,
+      "options": [
+        { "key": "nitro", "name": "Nitroglycerin", "blurb": "+45% damage, +25% blast, +10% rate.", "mult": { "damage": 1.45, "splash_radius": 1.25, "rate": 1.1 } },
+        { "key": "daisy_chain", "name": "Daisy Chain", "blurb": "Tossed high enough to catch flyers. +20% range.", "mult": { "range": 1.2 }, "flags": { "allow_air": 1 } }
+      ]
+    }
+  ],
+
+  "grapeshot": [
+    {
+      "tier": 5,
+      "options": [
+        { "key": "chain_shot", "name": "Chain Shot", "blurb": "Two balls on a chain, tearing through. +2 pierce.", "flags": { "pierce": 2 } },
+        { "key": "heavier_shot", "name": "Heavier Shot", "blurb": "+45% damage.", "mult": { "damage": 1.45 } }
+      ]
+    },
+    {
+      "tier": 10,
+      "options": [
+        { "key": "buckshot", "name": "Buckshot", "blurb": "+40% blast, +20% damage.", "mult": { "splash_radius": 1.4, "damage": 1.2 } },
+        { "key": "powder_charge", "name": "Powder Charge", "blurb": "+40% rate.", "mult": { "rate": 1.4 } }
+      ]
+    },
+    {
+      "tier": 15,
+      "options": [
+        { "key": "scattershot", "name": "Scattershot", "blurb": "+35% blast, +2 pierce.", "mult": { "splash_radius": 1.35 }, "flags": { "pierce": 2 } },
+        { "key": "deck_gun", "name": "Deck Gun", "blurb": "+50% damage, +20% range.", "mult": { "damage": 1.5, "range": 1.2 } }
+      ]
+    },
+    {
+      "tier": 20,
+      "options": [
+        { "key": "broadsides", "name": "Broadsides", "blurb": "+40% damage, +50% blast.", "mult": { "damage": 1.4, "splash_radius": 1.5 } },
+        { "key": "grapeshot_storm", "name": "Grapeshot Storm", "blurb": "+50% rate, +3 pierce.", "mult": { "rate": 1.5 }, "flags": { "pierce": 3 } }
+      ]
+    }
+  ],
+
+  "harpoon": [
+    {
+      "tier": 5,
+      "options": [
+        { "key": "barbed_head", "name": "Barbed Head", "blurb": "Rips plating away. -5 armour for 3s.", "flags": { "armor_shred": 5, "armor_shred_duration": 3.0 } },
+        { "key": "heavy_line", "name": "Heavy Line", "blurb": "A thicker cable. Slows to 50%, +50% slow time.", "override": { "slow_factor": 0.5 }, "mult": { "slow_duration": 1.5 } }
+      ]
+    },
+    {
+      "tier": 10,
+      "options": [
+        { "key": "winch", "name": "Winch", "blurb": "Reels the next one in faster. +35% rate.", "mult": { "rate": 1.35 } },
+        { "key": "steel_cable", "name": "Steel Cable", "blurb": "+40% damage.", "mult": { "damage": 1.4 } }
+      ]
+    },
+    {
+      "tier": 15,
+      "options": [
+        { "key": "serrated", "name": "Serrated", "blurb": "-8 armour for 4s.", "flags": { "armor_shred": 8, "armor_shred_duration": 4.0 } },
+        { "key": "harpoon_volley", "name": "Harpoon Volley", "blurb": "Skewers 2 more enemies.", "flags": { "pierce": 2 } }
+      ]
+    },
+    {
+      "tier": 20,
+      "options": [
+        { "key": "whaling_gun", "name": "Whaling Gun", "blurb": "+50% damage, finishes targets under 25%.", "mult": { "damage": 1.5 }, "flags": { "execute_below": 0.25 } },
+        { "key": "snare", "name": "Snare", "blurb": "Slows to 35%, +20% range.", "override": { "slow_factor": 0.35 }, "mult": { "range": 1.2 } }
+      ]
+    }
+  ],
+
+  "raygun": [
+    {
+      "tier": 5,
+      "options": [
+        { "key": "focusing_crystal", "name": "Focusing Crystal", "blurb": "+40% damage.", "mult": { "damage": 1.4 } },
+        { "key": "rapid_discharge", "name": "Rapid Discharge", "blurb": "+40% rate.", "mult": { "rate": 1.4 } }
+      ]
+    },
+    {
+      "tier": 10,
+      "options": [
+        { "key": "disintegration", "name": "Disintegration", "blurb": "Cuts down targets under 20% health.", "flags": { "execute_below": 0.2 } },
+        { "key": "piercing_ray", "name": "Piercing Ray", "blurb": "The bolt passes through 2 more enemies.", "flags": { "pierce": 2 } }
+      ]
+    },
+    {
+      "tier": 15,
+      "options": [
+        { "key": "overcharged_cell", "name": "Overcharged Cell", "blurb": "+35% damage, ignores armour.", "mult": { "damage": 1.35 }, "flags": { "true_damage": 1 } },
+        { "key": "beam_splitter", "name": "Beam Splitter", "blurb": "+80% blast.", "mult": { "splash_radius": 1.8 } }
+      ]
+    },
+    {
+      "tier": 20,
+      "options": [
+        { "key": "atomiser", "name": "Atomiser", "blurb": "+40% damage, +20% rate.", "mult": { "damage": 1.4, "rate": 1.2 } },
+        { "key": "death_ray", "name": "Death Ray", "blurb": "Ignores armour, cuts down under 30%.", "flags": { "true_damage": 1, "execute_below": 0.3 } }
+      ]
+    }
+  ],
+
+  "ioncannon": [
+    {
+      "tier": 5,
+      "options": [
+        { "key": "orbital_charge", "name": "Orbital Charge", "blurb": "+35% blast, +25% damage.", "mult": { "splash_radius": 1.35, "damage": 1.25 } },
+        { "key": "stabilised_beam", "name": "Stabilised Beam", "blurb": "+30% rate.", "mult": { "rate": 1.3 } }
+      ]
+    },
+    {
+      "tier": 10,
+      "options": [
+        { "key": "plasma_burn", "name": "Plasma Burn", "blurb": "The blast leaves plasma behind. 16/s fire for 3s.", "flags": { "burn_dps": 16, "burn_duration": 3.0, "burn_stacks": 1 } },
+        { "key": "ionised_air", "name": "Ionised Air", "blurb": "+40% blast, +20% range.", "mult": { "splash_radius": 1.4, "range": 1.2 } }
+      ]
+    },
+    {
+      "tier": 15,
+      "options": [
+        { "key": "tungsten_rod", "name": "Tungsten Rod", "blurb": "A heavier strike. +45% damage.", "mult": { "damage": 1.45 } },
+        { "key": "emp_burst", "name": "EMP Burst", "blurb": "Fries shields and plating. -6 armour for 3s.", "flags": { "armor_shred": 6, "armor_shred_duration": 3.0 } }
+      ]
+    },
+    {
+      "tier": 20,
+      "options": [
+        { "key": "orbital_strike", "name": "Orbital Strike", "blurb": "+50% damage, +30% blast.", "mult": { "damage": 1.5, "splash_radius": 1.3 } },
+        { "key": "annihilator", "name": "Annihilator", "blurb": "Ignores armour, cuts down under 30%.", "flags": { "true_damage": 1, "execute_below": 0.3 } }
+      ]
+    }
+  ]
+}

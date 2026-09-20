@@ -1,0 +1,100 @@
+{
+  "_comment": "Endless wave generation parameters. hp/count/speed/bounty curves are documented in docs/DESIGN.md section 4.",
+
+  "prep_time": 12.0,
+  "early_call_coins_per_sec": 2.0,
+  "max_concurrent": 300,
+  "base_count": 8,
+  "max_per_wave": 400,
+  "group_gap": 1.6,
+  "_delivery_comment": "How fast a wave arrives. The floors are what decide late-game density: once the interval bottoms out, every further wave is the same length carrying more health. These are set deliberately slow -- spawn intervals floor at 0.30s and group gaps at 0.55s -- so a wave trickles in and the battle builds up instead of bursting, and the longer prep between waves gives the player room to breathe and arrange before each scene. The tightest values tried (0.14 / 0.28) punished small builds hard and were reverted, and the even slower 0.30 / 0.55 is a pacing choice rather than a balance one.",
+  "spawn_interval_base": 1.3,
+  "spawn_interval_floor": 0.30,
+  "spawn_interval_per_wave": 0.003,
+  "group_gap_per_wave": 0.008,
+  "group_gap_floor": 0.55,
+
+  "x": "Wave composition uses weight = weight * (1 + skill * waves_since_unlock), then samples without replacement proportional to weight.",
+
+  "_mix_comment": "How many DISTINCT enemy types a wave actually contains: mix_types_base, plus one more every mix_types_per_waves waves, capped by how many are unlocked. The wave commits to that set up front and rotates through it, so every chosen type genuinely appears -- drawing each group independently from skewed weights could produce a 'mixed' wave that was almost entirely one type.",
+  "mix_types_base": 2,
+  "mix_types_per_waves": 5,
+
+  "mini_boss": {
+    "every": 10,
+    "hp_mult": 4.0,
+    "bounty_mult": 6.0
+  },
+
+  "boss": {
+    "every": 25,
+    "count_base": 1,
+    "count_per_50_waves": 1
+  },
+
+  "_scaling_comment": "hp_exp is the lever that moves the late wall. The player's damage saturates (max_level 20 plus four specialisation tiers), so enemy health is the only curve still growing; because it is exponential, a small change compounds hard -- at wave 55 a 1.058 -> 1.066 step is already 1.55x more health. count_lin was tried at 0.17 and REVERTED: extra enemies are extra bounty, and the measured effect was to make the run EASIER (budget 22 reached wave 67 against a 62 baseline) because the income outpaced the threat.",
+  "scaling": {
+    "hp_lin": 0.098,
+    "hp_exp": 1.076,
+    "count_lin": 0.155,
+    "speed_lin": 0.01,
+    "speed_cap": 2.0,
+
+    "_armor_comment": "Flat armour every enemy gains as the run goes on. This is the one late-game lever that lowers the player's EFFECTIVE damage instead of raising a health bar, so it bites on a different axis than hp does: a gatling or flamethrower built on many tiny hits loses a far larger fraction of its output than a sniper does, and towers that ignore or halve armour (venom, tesla) become the answer. Deliberately NOT multiplied by difficulty `power`: armour is subtraction, and a 5x multiplier would leave low-damage towers unable to damage anything at all rather than merely weakened.",
+    "armor_lin": 0.11,
+    "armor_cap": 14,
+
+    "bounty_lin": 0.03,
+    "bounty_exp": 1.045
+  },
+
+  "wave_bonus_base": 15,
+  "wave_bonus_per_wave": 3.4,
+
+  "_difficulty_comment": "Selectable difficulty. Three independent multipliers, because they do different jobs: `size` scales how many enemies a wave contains, `power` scales enemy health (a flat multiplier on everything), and `growth` scales how far the endless curves have travelled from their wave-1 baseline -- growth 1 is the authored curve, 0.8 makes it ramp slower, 1.45 much faster. Bounty is deliberately NOT scaled: harder should mean harder, not harder-but-richer. Index `default` is which entry a new session starts on.",
+
+  "_difficulty_ladder": "`power` is the per-preset enemy-health multiplier. Relaxed is held at 1.0 so there is still a preset that plays like the old Normal, and Normal sits at 2.6 with growth 1.08 (raised again after the player asked for more challenge). Each step is still roughly 1.3x-1.4x the last, which keeps the ladder geometric rather than arbitrary.",
+
+  "_power_ramp_comment": "`power` is ramped in over power_ramp_waves rather than applied from wave 1. Enemy health is already knife-edge in the first ten waves -- the starting economy buys about seven Basic towers, and wave 1 is only just winnable with them -- so a flat 2x from the start does not make the game twice as hard, it makes wave 6 unwinnable. Ramping means the opening stays playable and the full multiplier lands once the player has an economy. At power_ramp_waves the multiplier is fully applied and stays there.",
+  "difficulty": {
+    "default": 2,
+    "power_ramp_waves": 25,
+    "levels": [
+      { "key": "relaxed",   "name": "Relaxed",   "size": 0.78, "power": 1.0, "growth": 0.85 },
+      { "key": "easy",      "name": "Easy",      "size": 0.90, "power": 1.6, "growth": 0.95 },
+      { "key": "normal",    "name": "Normal",    "size": 1.0,  "power": 2.6, "growth": 1.08 },
+      { "key": "hard",      "name": "Hard",      "size": 1.12, "power": 3.4, "growth": 1.17 },
+      { "key": "brutal",    "name": "Brutal",    "size": 1.25, "power": 4.7, "growth": 1.31 },
+      { "key": "nightmare", "name": "Nightmare", "size": 1.45, "power": 6.5, "growth": 1.47 }
+    ]
+  },
+
+  "_interest_comment": "Paid at the end of each cleared wave, on coins still in the bank. The rate rises with the size of the bank (rate_per_step every step_coins) and again with the wave number, then clamps at max_rate. Saving is a real strategy, but a hoard that never gets spent still loses.",
+  "interest": {
+    "base_rate": 0.015,
+    "rate_per_step": 0.004,
+    "step_coins": 250,
+    "wave_rate_bonus": 0.0012,
+    "max_rate": 0.080
+  },
+
+  "start_coins": 330,
+  "base_hp": 24,
+  "bonus_tile_coins": 25,
+  "sell_refund": 0.7,
+
+  "_leveling_comment": "Tower levelling. `xp_per_damage` and `xp_to_next_base` together set how fast a tower evolves: a tower earns xp_per_damage per point of damage it deals, and needs xp_to_next_base * level^xp_to_next_power to reach the next level. Both were raised to slow evolution down -- a tower used to reach level 20 long before the run ended, so its growth was over for most of the run and the last thirty waves were played with a finished build. Slower levelling spreads that growth across the whole run, and it also delays the specialisation tiers, which are what the late wall is actually made of.",
+  "leveling": {
+    "max_level": 20,
+    "damage_per_level": 0.12,
+    "range_per_level": 0.04,
+    "rate_per_level": 0.06,
+    "xp_per_damage": 0.13,
+    "xp_to_next_base": 110.0,
+    "xp_to_next_power": 1.55,
+    "upgrade_cost_factor": 0.6,
+    "upgrade_cost_growth": 1.32,
+    "specialisation_cost_factor": 1.2,
+    "spec_cost_growth": 1.55
+  }
+}

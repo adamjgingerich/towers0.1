@@ -1,0 +1,297 @@
+{
+  "_comment": "Barracks: the structure that gates how many towers a run may field, and supports the towers near it. Everything here is data -- the simulation reads `capacity`, `aura`, `levels`, `ranks`, `powers` and `aircraft` generically.",
+
+  "_design_comment": "The barracks used to unlock a fixed buff every other level: the same five bonuses, in the same order, in every run. It now offers a CHOICE at every level, which turns it from a timer into a build. Two barracks that reach level 6 can be completely different structures, and one of the roads leads to an air wing that fights on its own rather than buffing anything.",
+
+  "name": "Base",
+  "description": "Raises the tower limit, and trains what is around it. Earns experience from the fighting it supports, and takes a new capability at every level.",
+  "hotkey": "b",
+
+  "cost": 110,
+  "cost_growth": 1.45,
+  "max_count": 5,
+
+  "_capacity_comment": "How many towers the run may field: `base` plus `per_barracks` for every base standing. Five bases give exactly 50 towers (10 + 5*8), and the capacity powers raise that to 60. The base is deliberately low enough that the first base is the first real decision of a run.",
+  "capacity": {
+    "base": 10,
+    "per_barracks": 8
+  },
+
+  "_levels_comment": "Six levels, and a choice at each one. The xp curve is set so a well-placed barracks takes roughly as long to finish as the old ten-level one did -- the ladder is shorter, but every rung is worth far more.",
+  "levels": {
+    "max_level": 6,
+    "xp_per_damage": 0.05,
+    "xp_per_wave": 26,
+    "xp_to_next_base": 520,
+    "xp_to_next_power": 1.44
+  },
+
+  "_aura_comment": "Radius grows with level. Growth is deliberately slow and additive: a radius that scaled hard would let one barracks reach across the map and make placement stop mattering. `radius_per_level` can also be bought directly as a power.",
+  "aura": {
+    "radius": 3.2,
+    "radius_per_level": 0.12
+  },
+
+  "_ranks_comment": "One promotion per level, so the building visibly rebuilds itself six times. `aura_bonus` is added to every aura value the barracks grants, which makes each promotion a power step on top of whatever power was chosen. Ranks and powers are different axes on purpose: the rank is what the structure IS, the power is what the player made it DO.",
+  "ranks": [
+    {
+      "at": 1,
+      "name": "Outpost",
+      "description": "A staked compound and a banner. Barely more than a claim on the ground.",
+      "aura_bonus": 0.00
+    },
+    {
+      "at": 2,
+      "name": "Fort",
+      "description": "Stone curtain wall, corner towers and a gate you can shut.",
+      "aura_bonus": 0.02
+    },
+    {
+      "at": 3,
+      "name": "Bastion",
+      "description": "Thicker walls, a raised keep, and a garrison that drills.",
+      "aura_bonus": 0.04
+    },
+    {
+      "at": 4,
+      "name": "Castle",
+      "description": "Round towers with roofs, a deep gatehouse, and an airfield marked out behind.",
+      "aura_bonus": 0.06
+    },
+    {
+      "at": 5,
+      "name": "Citadel",
+      "description": "Twin walls, spired towers, braziers burning along the parapet.",
+      "aura_bonus": 0.08
+    },
+    {
+      "at": 6,
+      "name": "Battlestation",
+      "description": "An armoured command post: turret pods, a live core, a signal mast, and aircraft on the pad.",
+      "aura_bonus": 0.10
+    }
+  ],
+
+  "_aircraft_comment": "Aircraft a barracks can field. They are not towers: they launch from the barracks, fly to whatever is inside `range` of the structure, attack at their own per-option `rate`, and return when the sky is clear.",
+
+  "_condition_comment": "An aircraft wears out while it is away from its pad and recovers while it is on it, so a wing is a rotating asset rather than a flat damage bonus. Left out too long it is destroyed, and then it has to be rebuilt at the base before it joins the rest again. The practical effect is that the wing's uptime depends on how close the fighting is to the barracks: a wing parked on the lane is always home and always healthy, while one sent far out spends as much time rebuilding as fighting.",
+
+  "_attrition_math": "Condition is measured in seconds of time away from the pad. A fighter is 100 at 2.6/s, so about 38 seconds of continuous duty; a bomber is 170 at 2.2/s, about 77 seconds; a tank is 240 at 1.9/s, about 126 seconds. Early waves are far shorter than that, so an early wing never loses anything. Late waves run 60-90 seconds, so a wing left out for a whole one will start being shot down -- which is the intended reading of 'long flight times without returning to base'. Repair is several times faster than wear and happens whenever an aircraft is home, so the whole wing starts every wave at full condition and the between-wave prep pays for itself. Rebuild is slower than repair, so being destroyed costs real time while being damaged costs almost none.",
+  "_aircraft_note": "Fighters are fast and single-target: they swarm whatever is nearest and chew it down. Bombers are slow, long-ranged and hit a whole group, which is what makes them the answer to a packed lane and the wrong answer to one stray runner. Bombers carry more condition and bleed it more slowly, but take longer to replace.",
+
+  "_tank_comment": "Tanks are the ground half of the wing. They drive out from the barracks instead of flying, they cannot touch a flyer at all, and in exchange they hit harder than anything else a barracks can field. `ground_only` is what enforces that; `altitude` of 0 and a `scale` below 1 are what make them read as vehicles on the lane rather than as aircraft. They are meant to look small against a tile -- a full-tile vehicle reads as terrain.",
+  "_tank_math": "A tank is 72 damage at 0.85/s: 61.2 dps on the ground against a fighter's 26.4 and a bomber's 39. It is slower than it used to be, so it lumbers to the fight -- the higher damage is the compensation for that travel time. It has the most condition of the three and bleeds it slowest, so a tank column survives being parked on a lane far longer than a fighter wing would. The price is that a pure flyer wave makes it useless, so it is a pick against a ground-heavy wave rather than a general one.",
+  "aircraft": {
+    "fighter": {
+      "name": "Fighter",
+      "description": "Fast interceptors. They swarm the nearest target and stay on it.",
+      "speed": 8.0,
+      "damage": 22,
+      "rate": 1.2,
+      "range": 7.0,
+      "attack_range": 0.75,
+      "splash": 0.0,
+      "damage_type": "physical",
+      "altitude": 0.34,
+      "scale": 0.68,
+      "hp": 100.0,
+      "attrition": 2.6,
+      "repair": 20.0,
+      "rebuild": 10.0
+    },
+    "bomber": {
+      "name": "Bomber",
+      "description": "Slow strike aircraft. One pass damages everything in the blast.",
+      "speed": 4.6,
+      "damage": 78,
+      "rate": 0.5,
+      "range": 8.0,
+      "attack_range": 1.5,
+      "splash": 1.3,
+      "damage_type": "physical",
+      "altitude": 0.46,
+      "scale": 0.76,
+      "hp": 170.0,
+      "attrition": 2.2,
+      "repair": 18.0,
+      "rebuild": 16.0
+    },
+    "tank": {
+      "name": "Tank",
+      "description": "Armoured ground support. Cannot hit flyers, but hits harder than anything else in the wing.",
+      "speed": 2.4,
+      "damage": 72,
+      "rate": 0.85,
+      "range": 6.0,
+      "attack_range": 1.0,
+      "splash": 0.5,
+      "damage_type": "physical",
+      "altitude": 0.0,
+      "scale": 0.58,
+      "ground_only": true,
+      "hp": 240.0,
+      "attrition": 1.9,
+      "repair": 16.0,
+      "rebuild": 20.0
+    }
+  },
+
+  "_powers_comment": "Three options at every level, and the choice is locked in per barracks. An option may grant an aura bonus, capacity, aura radius, or an air wing. `aura` values ADD to the structure's aura; caps are applied when the world sums overlapping auras, so stacking cannot run away. Adding a power is pure data -- the UI generates the buttons and the inspector reads its labels from here.",
+
+  "_aura_aim": "The aura powers are tuned so a fully buffed ring of towers is a real alternative to an air wing rather than a strictly worse one. Neither is reachable alongside the other.",
+  "powers": [
+    {
+      "level": 1,
+      "options": [
+        {
+          "key": "marksmanship",
+          "name": "Marksmanship Drills",
+          "description": "Towers in the aura deal +12% damage.",
+          "aura": { "damage": 0.12 }
+        },
+        {
+          "key": "logistics",
+          "name": "Logistics Corps",
+          "description": "This base supports 1 more tower.",
+          "capacity": 1
+        },
+        {
+          "key": "rapid_drills",
+          "name": "Rapid Drills",
+          "description": "Towers in the aura fire 10% faster.",
+          "aura": { "rate": 0.10 }
+        }
+      ]
+    },
+
+    {
+      "level": 2,
+      "options": [
+        {
+          "key": "fighter_wing",
+          "name": "Fighter Wing",
+          "description": "Two fighters. They launch, swarm the nearest enemy, and attack 1.2 times a second.",
+          "air": { "kind": "fighter", "count": 2, "rate": 1.2 }
+        },
+        {
+          "key": "optics",
+          "name": "Optics Section",
+          "description": "Towers in the aura gain +10% range.",
+          "aura": { "range": 0.10 }
+        },
+        {
+          "key": "bounty_office",
+          "name": "Bounty Office",
+          "description": "Towers in the aura earn +18% more per kill.",
+          "aura": { "bounty": 0.18 }
+        }
+      ]
+    },
+
+    {
+      "level": 3,
+      "options": [
+        {
+          "key": "gunnery_school",
+          "name": "Gunnery School",
+          "description": "Towers in the aura deal +16% damage.",
+          "aura": { "damage": 0.16 }
+        },
+        {
+          "key": "fortified_works",
+          "name": "Fortified Works",
+          "description": "The aura reaches 0.7 tiles further.",
+          "radius": 0.7
+        },
+        {
+          "key": "quartermaster",
+          "name": "Quartermaster",
+          "description": "This base supports 1 more tower.",
+          "capacity": 1
+        }
+      ]
+    },
+
+    {
+      "level": 4,
+      "options": [
+        {
+          "key": "bomber_squadron",
+          "name": "Bomber Squadron",
+          "description": "One bomber. Slow and heavy: each pass blasts everything in a 1.3 tile radius.",
+          "air": { "kind": "bomber", "count": 1, "rate": 0.5 }
+        },
+        {
+          "key": "armour_troop",
+          "name": "Armour Troop",
+          "description": "Two tanks. They only engage ground targets, but hit harder than anything else in the wing and shrug off far more wear.",
+          "air": { "kind": "tank", "count": 2, "rate": 0.8 }
+        },
+        {
+          "key": "precision_firing",
+          "name": "Precision Firing",
+          "description": "Towers in the aura fire 12% faster and crit 6% more often.",
+          "aura": { "rate": 0.12, "crit_chance": 0.06 }
+        },
+        {
+          "key": "sharpshooters",
+          "name": "Sharpshooters",
+          "description": "Towers in the aura gain +12% range and deal +6% damage.",
+          "aura": { "range": 0.12, "damage": 0.06 }
+        }
+      ]
+    },
+
+    {
+      "level": 5,
+      "options": [
+        {
+          "key": "second_wing",
+          "name": "Second Wing",
+          "description": "Three more fighters, attacking 1.6 times a second.",
+          "air": { "kind": "fighter", "count": 3, "rate": 1.6 }
+        },
+        {
+          "key": "heavy_ordnance",
+          "name": "Heavy Ordnance",
+          "description": "Towers in the aura deal +20% damage.",
+          "aura": { "damage": 0.20 }
+        },
+        {
+          "key": "logistics_ii",
+          "name": "Logistics Corps II",
+          "description": "Towers in the aura fire 10% faster and earn 10% more per kill.",
+          "aura": { "rate": 0.10, "bounty": 0.10 }
+        }
+      ]
+    },
+
+    {
+      "level": 6,
+      "options": [
+        {
+          "key": "strike_group",
+          "name": "Strike Group",
+          "description": "Combined arms: two bombers, three fighters and two tanks, all attacking faster.",
+          "air": [
+            { "kind": "bomber", "count": 2, "rate": 0.7 },
+            { "kind": "fighter", "count": 3, "rate": 1.8 },
+            { "kind": "tank", "count": 2, "rate": 1.0 }
+          ]
+        },
+        {
+          "key": "master_gunnery",
+          "name": "Master Gunnery",
+          "description": "Towers in the aura deal +22% damage and fire 12% faster.",
+          "aura": { "damage": 0.22, "rate": 0.12 }
+        },
+        {
+          "key": "grand_arsenal",
+          "name": "Grand Arsenal",
+          "description": "Towers in the aura gain +14% damage, +14% range and +22% bounty.",
+          "aura": { "damage": 0.14, "range": 0.14, "bounty": 0.22 }
+        }
+      ]
+    }
+  ]
+}
