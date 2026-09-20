@@ -2060,15 +2060,28 @@ function drawTile(ctx, x, y, fw, fh, key) {
     ctx.arc(x + fw / 2, y + fh / 2, fw * 0.20, 0, Math.PI * 2);
     ctx.fill();
   } else if (key === 'base') {
-    draw('#15293f', '#2f6ea8');
-    ctx.strokeStyle = 'rgba(150,210,255,0.75)';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.arc(x + fw / 2, y + fh / 2, fw * 0.24, 0, Math.PI * 2);
+    // The home base: an armoured hexagon around a reactor, sharing the
+    // barracks' green-core motif so "base" reads as one family on the board.
+    const cx = x + fw / 2;
+    const cy = y + fh / 2;
+    draw('#16261d', '#2f6a4a');
+    ngon(ctx, cx, cy, fw * 0.32, 6, Math.PI / 6);
+    ctx.fillStyle = '#1c3426';
+    ctx.fill();
+    ctx.strokeStyle = '#3f8f63';
+    ctx.lineWidth = 2.5;
     ctx.stroke();
-    ctx.fillStyle = 'rgba(150,210,255,0.35)';
+    // Inner ring, echoing the landing-pad seam on the barracks.
+    ngon(ctx, cx, cy, fw * 0.22, 6, Math.PI / 6);
+    ctx.strokeStyle = 'rgba(110, 231, 168, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Corner bolts, so it reads as bolted to the ground rather than painted on.
+    bolts(ctx, cx, cy, fw * 0.32, 6, fw * 0.026, '#2f6a4a', Math.PI / 6);
+    // Reactor core.
+    ctx.fillStyle = 'rgba(110, 255, 170, 0.9)';
     ctx.beginPath();
-    ctx.arc(x + fw / 2, y + fh / 2, fw * 0.12, 0, Math.PI * 2);
+    ctx.arc(cx, cy, fw * 0.1, 0, Math.PI * 2);
     ctx.fill();
   } else if (key === 'bonus') {
     draw('#2c2716', '#736030');
