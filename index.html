@@ -25,23 +25,25 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&family=Fira+Code:wght@400;600&family=VT323&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=Orbitron:wght@400;700&family=Audiowide&family=Cinzel:wght@400;700&family=Special+Elite&family=Space+Grotesk:wght@400;700&family=Bebas+Neue&family=Monoton&family=Share+Tech+Mono&display=swap"
       rel="stylesheet"
     />
 
     <style>
       :root {
-        --bg: #0b0e13;
-        --panel: #131820;
-        --panel-2: #1a212c;
-        --line: #26303e;
-        --text: #dfe6f0;
-        --muted: #8494a8;
-        --amber: #ffd166;
-        --cyan: #7fd6ff;
-        --green: #6ee7a8;
-        --red: #ff6b6b;
+        --bg: #1e1a2e;
+        --panel: #2c2844;
+        --panel-2: #3a3458;
+        --line: #5a5478;
+        --text: #e8e4f4;
+        --muted: #9890b8;
+        --amber: #f0c060;
+        --cyan: #68c8e8;
+        --green: #78d898;
+        --red: #e87878;
         --radius: 8px;
+        --font: "Press Start 2P", "Courier New", monospace;
+        --font-size: 10px;
 
         /*
           Layout budget. The board is a fixed 40:24, so on a typical widescreen
@@ -55,7 +57,7 @@
 
       * {
         box-sizing: border-box;
-        font-family: "Fira Code", "Cascadia Code", "JetBrains Mono", Consolas, "Roboto Mono", monospace;
+        font-family: var(--font);
       }
 
       html,
@@ -68,25 +70,20 @@
       body {
         background: var(--bg);
         color: var(--text);
-        font: 13px/1.45 "Fira Code", "Cascadia Code", "JetBrains Mono", Consolas, "Roboto Mono", monospace;
+        font-family: var(--font);
+        font-size: var(--font-size);
+        line-height: 1.45;
         -webkit-font-smoothing: antialiased;
       }
 
       /*
-        RGB keyboard backlighting: key labels cycle through the spectrum. The
-        colour is saturated on purpose -- a hue rotation on near-white text is
-        invisible, and a keyboard's lights are saturated by definition.
+        Mainframe-console chrome: the tower names and the status line read as a
+        steady phosphor readout rather than cycling colour, so the board looks
+        like a terminal instead of a keyboard.
       */
-      @keyframes rgb-cycle {
-        from { filter: hue-rotate(0deg); }
-        to   { filter: hue-rotate(360deg); }
-      }
-
-      .stat .label,
-      .shop-item .tname,
-      #phase {
-        color: hsl(280 90% 64%);
-        animation: rgb-cycle 7s linear infinite;
+      .shop-item .tname {
+        color: var(--green);
+        text-transform: uppercase;
       }
 
       /* Only three rows: a thin header, the board, a thin shop strip. */
@@ -193,7 +190,8 @@
       }
 
       #phase {
-        color: var(--text);
+        color: var(--green);
+        text-transform: uppercase;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
       }
@@ -235,6 +233,57 @@
       }
       #speeds button:last-child {
         border-right: 0;
+      }
+
+      /* ------------------------------------------------------ theme */
+
+      #theme-select {
+        background: var(--panel-2);
+        color: var(--text);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 3px 6px;
+        font-size: 11px;
+        font-family: inherit;
+        max-width: 132px;
+        cursor: pointer;
+      }
+
+      /*
+        RGB Rave theme: the HUD readouts hue-rotate through the spectrum. The
+        theme's colours are saturated so the rotation is clearly visible.
+      */
+      body.theme-rgb .stat .value,
+      body.theme-rgb .shop-item .tname,
+      body.theme-rgb #phase,
+      body.theme-rgb .tp-title,
+      body.theme-rgb .skill-name {
+        animation: rgb-cycle 5s linear infinite;
+      }
+      @keyframes rgb-cycle {
+        from { filter: hue-rotate(0deg); }
+        to   { filter: hue-rotate(360deg); }
+      }
+
+      /* Soft phosphor glow on the interactive readouts. */
+      body.theme-glow .controls button,
+      body.theme-glow .shop-item .tname,
+      body.theme-glow .stat .value,
+      body.theme-glow #phase,
+      body.theme-glow .skill-name {
+        text-shadow: 0 0 7px currentColor;
+      }
+
+      /* A gentle breathing pulse, subtle enough to never strobe. */
+      body.theme-pulse .controls button,
+      body.theme-pulse .shop-item .tname,
+      body.theme-pulse .stat .value,
+      body.theme-pulse #phase {
+        animation: text-pulse 2.8s ease-in-out infinite;
+      }
+      @keyframes text-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.68; }
       }
 
       /* ------------------------------------------------------ difficulty */
@@ -1695,6 +1744,7 @@
           <button type="button" id="btn-test" title="Sandbox: build at any level for free">Test</button>
           <button type="button" id="btn-skills" title="Persistent upgrades earned across runs">Skills</button>
           <button type="button" id="btn-fullscreen" title="Toggle fullscreen">Full</button>
+          <select id="theme-select" title="Colour theme" aria-label="Colour theme"></select>
           <label id="difficulty" title="Harder settings boost wave size, enemy power and how fast the curves ramp">
             <span class="dlabel">Difficulty</span>
             <input

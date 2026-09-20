@@ -25,6 +25,14 @@ export class SpawnOrder {
   }
 }
 
+/** Adaptive-difficulty bounds: how far the threat multiplier may drift. */
+const THREAT_MAX = 1.5;
+const THREAT_MIN = 0.85;
+/** Threat gained for a wave cleared with zero leaks. */
+const THREAT_PER_CLEAN = 0.025;
+/** Threat lost per enemy that leaked through. */
+const THREAT_PER_LEAK = 0.06;
+
 export class WaveManager {
   constructor(config, seed = 12345) {
     this.config = config;
@@ -39,6 +47,13 @@ export class WaveManager {
     this.lastBonus = 0.0;
     /** Rate actually applied by the most recent payout, for the HUD. */
     this.lastInterestRate = 0.0;
+    /**
+     * Adaptive difficulty: rises on clean clears and falls on leaks, so the
+     * horde keeps pace with a strong build but eases off a struggling one.
+     */
+    this.threat = 1.0;
+    /** Leaks counted at the start of the current wave, to score how clean it was. */
+    this.leaksAtWaveStart = 0;
     /** Neutral until the host supplies a difficulty selection. */
     this.diff = { size: 1.0, power: 1.0, growth: 1.0 };
   }
@@ -106,7 +121,7 @@ export class WaveManager {
     const d = this.diff;
     const lin = 1.0 + s.hp_lin * d.growth * (wave - 1);
     const exp = 1.0 + (s.hp_exp - 1.0) * d.growth;
-    return lin * exp ** (wave - 1) * this.effectivePower(wave);
+    return lin * exp ** (wave - 1) * this.effectivePower(wave) * this.threat;
   }
 
   countMult(wave) {
@@ -313,6 +328,7 @@ export class WaveManager {
 
   startWave(world) {
     this.wave += 1;
+    this.leaksAtWaveStart = world.stats.leaked;
     this.queue = this.buildWave(this.wave);
     this.queueHead = 0;
     this.clock = 0.0;
@@ -353,6 +369,22 @@ export class WaveManager {
 
     this.state = PREP;
     this.prepRemaining = cfg.prep_time;
+
+    // Adaptive difficulty: score the wave that just ended against the previous.
+    const leaks = world.stats.leaked - this.leaksAtWaveStart;
+    const before = this.threat;
+    if (leaks <= 0) {
+      this.threat = Math.min(THREAT_MAX, this.threat + THREAT_PER_CLEAN);
+    } else {
+      this.threat = Math.max(THREAT_MIN, this.threat - THREAT_PER_LEAK * leaks);
+    }
+    if (this.threat !== before) {
+      world.note(
+        this.threat > before
+          ? `Horde adapting — enemy health ×${this.threat.toFixed(2)}`
+          : `Horde easing — enemy health ×${this.threat.toFixed(2)}`,
+      );
+    }
   }
 
   /**

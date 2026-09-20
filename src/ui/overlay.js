@@ -16,6 +16,7 @@ import { CLEARING, OVER, PREP, SPAWNING } from '../sim/wave_manager.js';
 import { BARRACKS_KEY } from '../sim/barracks.js';
 import { TARGETING_LABELS } from '../sim/tower.js';
 import { UNLOCK_WAVE, mapUnlocked } from '../storage.js';
+import { THEMES } from '../themes.js';
 
 const SPEEDS = [0.25, 0.5, 1, 2, 3, 4, 5];
 
@@ -115,6 +116,7 @@ export class Overlay {
       skillsCores: $('skills-cores'),
       skillsHint: $('skills-hint'),
       btnSkillsClose: $('btn-skills-close'),
+      themeSelect: $('theme-select'),
     };
 
     this.shopButtons = new Map();
@@ -132,6 +134,7 @@ export class Overlay {
 
     this._buildShop();
     this._buildSpeeds();
+    this._buildThemes();
     this._buildDifficulty();
     this._buildInspector();
     this._buildTest();
@@ -479,6 +482,35 @@ export class Overlay {
   _buildSkills() {
     this.el.btnSkills.addEventListener('click', () => this.cb.onSkills());
     this.el.btnSkillsClose.addEventListener('click', () => this.cb.onSkillsClose());
+  }
+
+  /** Populate the theme dropdown from the theme data, grouped by category. */
+  _buildThemes() {
+    const select = this.el.themeSelect;
+    if (!select) return;
+    const groups = new Map();
+    for (const theme of THEMES) {
+      const key = theme.group ?? 'Themes';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(theme);
+    }
+    for (const [group, themes] of groups) {
+      const optgroup = document.createElement('optgroup');
+      optgroup.label = group;
+      for (const theme of themes) {
+        const option = document.createElement('option');
+        option.value = theme.id;
+        option.textContent = theme.name;
+        optgroup.appendChild(option);
+      }
+      select.appendChild(optgroup);
+    }
+    select.addEventListener('change', () => this.cb.onTheme(select.value));
+  }
+
+  /** Reflect the active theme in the dropdown without re-firing the callback. */
+  setTheme(id) {
+    if (this.el.themeSelect) this.el.themeSelect.value = id;
   }
 
   /**

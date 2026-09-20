@@ -32,6 +32,7 @@ import {
   writePlayers,
 } from './storage.js';
 import { resolveMeta, skillCost, skillNode, skillUnlocked } from './sim/skills.js';
+import { applyTheme, readTheme, writeTheme } from './themes.js';
 import { FloatingText } from './ui/floating-text.js';
 import { Input } from './ui/input.js';
 import { Overlay } from './ui/overlay.js';
@@ -156,6 +157,10 @@ class Game {
       Math.max(0, readDifficulty(config.waves.difficulty.default)),
     );
 
+    /** Colour theme, a preference remembered like difficulty and volume. */
+    this.themeId = readTheme();
+    applyTheme(this.themeId);
+
     this.world = this.newWorld();
     this.overlay = null;
     this.input = null;
@@ -233,6 +238,14 @@ class Game {
       `Difficulty: ${level.name} — wave size x${level.size}, ` +
         `enemy power x${level.power}, growth x${level.growth} (from next wave)`,
     );
+  }
+
+  /** Change the colour theme, apply it, and remember it. */
+  setTheme(id) {
+    const theme = applyTheme(id);
+    this.themeId = theme.id;
+    writeTheme(theme.id);
+    if (this.overlay) this.overlay.flash(`Theme: ${theme.name}`);
   }
 
   /**
@@ -899,6 +912,10 @@ class Game {
         this.setDifficulty(index);
       },
 
+      onTheme: (id) => {
+        this.setTheme(id);
+      },
+
       onCallEarly: () => {
         this.world.waves.callEarly(this.world);
       },
@@ -1076,6 +1093,7 @@ async function boot() {
   game.attach(overlay, input);
   overlay.setMapId(game.mapId);
   overlay.setDifficulty(game.difficultyIndex);
+  overlay.setTheme(game.themeId);
   overlay.setVolumes({ music: game.musicVolume, sfx: game.sfxVolume });
 
   // A stored preference may point past the end of the level list if the data

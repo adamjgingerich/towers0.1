@@ -35,9 +35,9 @@
   "_scaling_comment": "hp_exp is the lever that moves the late wall. The player's damage saturates (max_level 20 plus four specialisation tiers), so enemy health is the only curve still growing; because it is exponential, a small change compounds hard -- at wave 55 a 1.058 -> 1.066 step is already 1.55x more health. count_lin was tried at 0.17 and REVERTED: extra enemies are extra bounty, and the measured effect was to make the run EASIER (budget 22 reached wave 67 against a 62 baseline) because the income outpaced the threat.",
   "scaling": {
     "hp_lin": 0.098,
-    "hp_exp": 1.076,
+    "hp_exp": 1.081,
     "count_lin": 0.155,
-    "speed_lin": 0.01,
+    "speed_lin": 0.013,
     "speed_cap": 2.0,
 
     "_armor_comment": "Flat armour every enemy gains as the run goes on. This is the one late-game lever that lowers the player's EFFECTIVE damage instead of raising a health bar, so it bites on a different axis than hp does: a gatling or flamethrower built on many tiny hits loses a far larger fraction of its output than a sniper does, and towers that ignore or halve armour (venom, tesla) become the answer. Deliberately NOT multiplied by difficulty `power`: armour is subtraction, and a 5x multiplier would leave low-damage towers unable to damage anything at all rather than merely weakened.",

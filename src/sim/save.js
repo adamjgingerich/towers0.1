@@ -57,7 +57,7 @@ const STATS_FIELDS = [
   'towersSold',
   'enemiesSpawned',
 ];
-const WAVE_FIELDS = ['prepRemaining', 'clock', 'waveElapsed', 'lastBonus'];
+const WAVE_FIELDS = ['prepRemaining', 'clock', 'waveElapsed', 'lastBonus', 'threat', 'leaksAtWaveStart'];
 
 /**
  * Coerce to a finite number.
@@ -288,6 +288,9 @@ export function applySave(world, config, data) {
   waves.state = data.waveState;
   waves.queueHead = num(data.queueHead);
   for (const field of WAVE_FIELDS) waves[field] = num(data.waveFields?.[field]);
+  // A missing threat (older saves) defaults to neutral, not 0 -- hpMult
+  // multiplies by it, and 0 would spawn every enemy at zero health.
+  if (!(waves.threat > 0)) waves.threat = 1.0;
   waves.queue = (data.queue ?? []).map(
     ([time, key, hpMult, bountyMult, speedMult]) =>
       new SpawnOrder(time, key, num(hpMult, 1), num(bountyMult, 1), num(speedMult, 1)),
