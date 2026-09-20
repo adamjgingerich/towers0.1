@@ -520,7 +520,11 @@ function drawTowerBase(ctx, x, y, fw, fh, key, frame = 0, frames = 1) {
   // data, so they are dispatched before the switch rather than as a case per
   // rank that would have to grow with data/barracks.json.
   if (key === 'barracks' || key.startsWith('barracks_')) {
-    drawBarracks(ctx, cx, cy, fw, fh, barracksRankOf(key), pulse);
+    // `drawBarracks` computes its own centre from the cell's top-left corner,
+    // so pass `x`/`y` rather than the already-centred `cx`/`cy` -- passing the
+    // centre here double-offsets every rank half a tile, which is how the
+    // barracks shipped drawn into the corner of its own cell.
+    drawBarracks(ctx, x, y, fw, fh, barracksRankOf(key), pulse);
     return;
   }
 
@@ -979,21 +983,23 @@ function barracksRankOf(key) {
 }
 
 /**
- * Barracks promotions: one structure per rank, from a staked compound to an
- * armoured command post.
+ * Barracks promotions: one structure per rank, from a survey relay to a
+ * battlestation.
  *
  * The building is the only part of a barracks a player can see without opening
  * the inspector, so these exist to make evolution legible on the board. A
  * structure that looks the same at level 1 and level 10 is a mechanic the player
  * has to read about instead of noticing.
  *
- * All five share one hue, one footprint and one motif -- walled compound with a
- * courtyard and a banner -- so they read as one line of upgrades rather than
- * five unrelated buildings. What escalates is the material and the height:
- * timber, then stone, then more stone, then a fortified town, then something
- * that has stopped being a castle at all.
+ * All five share one hue, one footprint and one motif -- a hexagonal landing
+ * pad with a reactor core at its centre -- so they read as one line of upgrades
+ * rather than five unrelated buildings. What escalates is the armour wrapped
+ * around that core: three anchor struts, then a sealed bunker, then a command
+ * ring, then a double-walled citadel, then a full battlestation. The green
+ * reactor is the "is anyone home" tell, and it is what the support aura is
+ * supposed to read as: a powered structure, not a castle.
  *
- * `rank` is 0-based; `pulse` is 0..1 and drives the flags, braziers and core.
+ * `rank` is 0-based; `pulse` is 0..1 and drives the core and the status lamps.
  */
 function drawBarracks(ctx, x, y, fw, fh, rank, pulse) {
   const cx = x + fw / 2;
@@ -1002,348 +1008,222 @@ function drawBarracks(ctx, x, y, fw, fh, rank, pulse) {
   // The olive the barracks has always been, kept so a promoted structure still
   // matches the shop button that builds it.
   const h = 96;
-  const wood = `hsl(${h - 52} 24% 32%)`;
-  const woodLit = `hsl(${h - 52} 30% 47%)`;
-  const stone = `hsl(${h} 13% 42%)`;
-  const stoneLit = `hsl(${h} 17% 57%)`;
-  const stoneDark = `hsl(${h} 16% 25%)`;
-  const deep = `hsl(${h} 18% 13%)`;
-  const yard = `hsl(${h} 14% 20%)`;
-  const roof = `hsl(${h - 30} 30% 34%)`;
-  const flag = `hsl(150 52% ${44 + pulse * 16}%)`;
-  const ember = `hsl(${34 + pulse * 14} 92% ${52 + pulse * 16}%)`;
-  const core = `hsl(150 88% ${50 + pulse * 26}%)`;
+  const hull = `hsl(${h} 12% 26%)`;
+  const hullLit = `hsl(${h} 14% 42%)`;
+  const hullDark = `hsl(${h} 16% 15%)`;
+  const edge = `hsl(${h} 22% 54%)`;
+  const pad = `hsl(${h} 10% 11%)`;
+  const padRing = `hsl(${h} 14% 26%)`;
+  const glow = `hsl(150 88% ${50 + pulse * 26}%)`;
+  const glowRing = `hsl(150 80% ${40 + pulse * 30}%)`;
+  const lamp = `hsl(150 90% ${58 + pulse * 18}%)`;
 
-  /** Notched battlements along the top edge of a wall. */
-  const merlons = (mx, my, mw, cell, color) => {
-    ctx.fillStyle = color;
-    const count = Math.max(2, Math.round(mw / (cell * 2)));
-    const block = mw / (count * 2 - 1);
-    for (let i = 0; i < count; i += 1) {
-      ctx.fillRect(mx + i * block * 2, my, block, cell);
-    }
-  };
-
-  /** Banner on a pole. The flag lifts with the pulse so nothing is ever static. */
-  const banner = (bx, by, scale) => {
-    ctx.strokeStyle = stoneLit;
-    ctx.lineWidth = fw * 0.024 * scale;
-    ctx.beginPath();
-    ctx.moveTo(bx, by);
-    ctx.lineTo(bx, by - fh * 0.36 * scale);
+  /** The shared landing pad every rank is built on. */
+  const groundPad = (r) => {
+    ngon(ctx, cx, cy, r, 6, Math.PI / 6);
+    ctx.fillStyle = pad;
+    ctx.fill();
+    ngon(ctx, cx, cy, r, 6, Math.PI / 6);
+    ctx.strokeStyle = padRing;
+    ctx.lineWidth = fw * 0.016;
     ctx.stroke();
-
-    const ripple = Math.sin(pulse * Math.PI * 2) * fw * 0.022 * scale;
-    ctx.beginPath();
-    ctx.moveTo(bx, by - fh * 0.36 * scale);
-    ctx.quadraticCurveTo(
-      bx + fw * 0.15 * scale + ripple,
-      by - fh * 0.31 * scale,
-      bx + fw * 0.27 * scale,
-      by - fh * 0.26 * scale,
-    );
-    ctx.quadraticCurveTo(
-      bx + fw * 0.14 * scale + ripple,
-      by - fh * 0.2 * scale,
-      bx,
-      by - fh * 0.16 * scale,
-    );
-    ctx.closePath();
-    ctx.fillStyle = flag;
-    ctx.fill();
+    ngon(ctx, cx, cy, r * 0.8, 6, Math.PI / 6);
+    ctx.strokeStyle = `hsl(${h} 12% 17%)`;
+    ctx.lineWidth = fw * 0.01;
+    ctx.stroke();
   };
 
-  /** A round or faceted tower, optionally with a conical roof. */
-  const roundTower = (tx, ty, r, roofColor, sides = 16) => {
-    ngon(ctx, tx, ty, r, sides, Math.PI / sides);
-    ctx.fillStyle = stone;
+  /** The reactor: a dark socket with a glowing heart, the one motif every rank shares. */
+  const core = (r, bright = false) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = hullDark;
     ctx.fill();
-    ctx.strokeStyle = stoneDark;
+    ctx.strokeStyle = edge;
     ctx.lineWidth = fw * 0.02;
     ctx.stroke();
-
-    ngon(ctx, tx, ty, r * 0.58, sides, Math.PI / sides);
-    ctx.fillStyle = stoneLit;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * (0.58 + pulse * 0.1), 0, Math.PI * 2);
+    ctx.fillStyle = glow;
     ctx.fill();
-
-    if (roofColor) {
+    if (bright) {
       ctx.beginPath();
-      ctx.moveTo(tx - r * 1.35, ty - r * 0.3);
-      ctx.lineTo(tx, ty - r * 2.2);
-      ctx.lineTo(tx + r * 1.35, ty - r * 0.3);
-      ctx.closePath();
-      ctx.fillStyle = roofColor;
-      ctx.fill();
-      ctx.strokeStyle = stoneDark;
-      ctx.lineWidth = fw * 0.014;
+      ctx.arc(cx, cy, r * (1.15 + pulse * 0.08), 0, Math.PI * 2);
+      ctx.strokeStyle = glowRing;
+      ctx.lineWidth = fw * 0.02;
       ctx.stroke();
     }
   };
 
-  /** A square tower with battlements. */
-  const squareTower = (tx, ty, size) => {
-    ctx.fillStyle = stone;
-    ctx.fillRect(tx - size, ty - size, size * 2, size * 2);
-    ctx.strokeStyle = stoneDark;
-    ctx.lineWidth = fw * 0.018;
-    ctx.strokeRect(tx - size, ty - size, size * 2, size * 2);
-    merlons(tx - size, ty - size - fw * 0.05, size * 2, fw * 0.05, stoneLit);
-  };
-
-  // A pitched roof, used for the keep from the castle onward.
-  const pitchedRoof = (tx, ty, halfW, height, color) => {
+  /** An armoured anchor strut pointing at the core, lit at its outer end. */
+  const pylon = (px, py, s) => {
+    const a = Math.atan2(cy - py, cx - px);
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(a);
     ctx.beginPath();
-    ctx.moveTo(tx - halfW, ty);
-    ctx.lineTo(tx, ty - height);
-    ctx.lineTo(tx + halfW, ty);
+    ctx.moveTo(-s * 0.55, s * 0.85);
+    ctx.lineTo(-s * 0.55, -s * 0.85);
+    ctx.lineTo(s * 0.5, -s * 0.26);
+    ctx.lineTo(s * 0.5, s * 0.26);
     ctx.closePath();
-    ctx.fillStyle = color;
+    ctx.fillStyle = hull;
     ctx.fill();
-    ctx.strokeStyle = stoneDark;
-    ctx.lineWidth = fw * 0.016;
+    ctx.strokeStyle = edge;
+    ctx.lineWidth = fw * 0.014;
     ctx.stroke();
+    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(px, py, s * 0.2, 0, Math.PI * 2);
+    ctx.fillStyle = lamp;
+    ctx.fill();
   };
 
-  // Every rank builds on the same cleared compound, so the growth reads as the
-  // same place getting more built up rather than a different building arriving.
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, fw * 0.45, fh * 0.43, 0, 0, Math.PI * 2);
-  ctx.fillStyle = deep;
-  ctx.fill();
+  /** A thin signal mast with a blinking lamp. */
+  const mast = (mx, my, mh) => {
+    ctx.strokeStyle = edge;
+    ctx.lineWidth = fw * 0.02;
+    ctx.beginPath();
+    ctx.moveTo(mx, my);
+    ctx.lineTo(mx, my - mh);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(mx, my - mh - fw * 0.01, fw * (pulse > 0.45 ? 0.032 : 0.026), 0, Math.PI * 2);
+    ctx.fillStyle = pulse > 0.45 ? lamp : `hsl(${h} 14% 28%)`;
+    ctx.fill();
+  };
 
-  ctx.beginPath();
-  ctx.roundRect(cx - fw * 0.4, cy - fh * 0.36, fw * 0.8, fh * 0.72, fw * 0.07);
-  ctx.fillStyle = yard;
-  ctx.fill();
+  groundPad(fw * 0.46);
 
   if (rank <= 0) {
-    // ------------------------------------------------------------- Outpost
-    // Stakes rather than walls: a claim on the ground with a flag on it.
-    const stakes = 16;
-    for (let i = 0; i < stakes; i += 1) {
-      const a = (i / stakes) * Math.PI * 2;
-      const px = cx + Math.cos(a) * fw * 0.38;
-      const py = cy + Math.sin(a) * fh * 0.33;
-      ctx.beginPath();
-      ctx.roundRect(px - fw * 0.03, py - fh * 0.1, fw * 0.06, fh * 0.2, fw * 0.022);
-      ctx.fillStyle = i % 3 === 0 ? woodLit : wood;
-      ctx.fill();
+    // ---------------------------------------------------------- Survey relay
+    // Three anchors hold up a bare core and a signal mast: a claim staked out.
+    for (let i = 0; i < 3; i += 1) {
+      const a = -Math.PI / 2 + (i / 3) * Math.PI * 2;
+      pylon(cx + Math.cos(a) * fw * 0.27, cy + Math.sin(a) * fh * 0.27, fw * 0.09);
     }
-
-    // A tent, so the inside reads as occupied rather than as empty ground.
-    ctx.beginPath();
-    ctx.moveTo(cx - fw * 0.21, cy + fh * 0.17);
-    ctx.lineTo(cx - fw * 0.07, cy - fh * 0.15);
-    ctx.lineTo(cx + fw * 0.07, cy + fh * 0.17);
-    ctx.closePath();
-    ctx.fillStyle = wood;
-    ctx.fill();
-    ctx.strokeStyle = woodLit;
-    ctx.lineWidth = fw * 0.018;
-    ctx.stroke();
-
-    banner(cx + fw * 0.18, cy + fh * 0.15, 0.85);
+    core(fw * 0.15);
+    mast(cx + fw * 0.19, cy - fh * 0.06, fh * 0.32);
     return;
   }
 
   if (rank === 1) {
-    // ---------------------------------------------------------------- Fort
-    // A curtain wall with a gate and four corner towers.
-    const wx = fw * 0.35;
-    const wy = fh * 0.31;
-
-    ctx.beginPath();
-    ctx.roundRect(cx - wx, cy - wy, wx * 2, wy * 2, fw * 0.03);
-    ctx.fillStyle = stone;
+    // ------------------------------------------------------- Sealed bunker
+    // A solid hex hull with the core set into it, bolted to the pad.
+    ngon(ctx, cx, cy, fw * 0.34, 6, Math.PI / 6);
+    ctx.fillStyle = hull;
     ctx.fill();
-    ctx.strokeStyle = stoneDark;
+    ctx.strokeStyle = edge;
     ctx.lineWidth = fw * 0.03;
     ctx.stroke();
-
-    // Battlements sit *inside* the wall's footprint so the silhouette stays
-    // within one tile; a barracks that overhangs its cell reads as a bug.
-    merlons(cx - wx + fw * 0.03, cy - wy + fh * 0.02, wx * 2 - fw * 0.06, fh * 0.06, stoneLit);
-
-    ctx.beginPath();
-    ctx.rect(cx - fw * 0.2, cy - fh * 0.16, fw * 0.4, fh * 0.32);
-    ctx.fillStyle = yard;
+    ngon(ctx, cx, cy, fw * 0.25, 6, Math.PI / 6);
+    ctx.fillStyle = hullLit;
     ctx.fill();
-
-    squareTower(cx - fw * 0.3, cy - fh * 0.26, fw * 0.085);
-    squareTower(cx + fw * 0.3, cy - fh * 0.26, fw * 0.085);
-    squareTower(cx - fw * 0.3, cy + fh * 0.26, fw * 0.085);
-    squareTower(cx + fw * 0.3, cy + fh * 0.26, fw * 0.085);
-
-    // Gatehouse on the south wall.
-    ctx.beginPath();
-    ctx.roundRect(cx - fw * 0.11, cy + fh * 0.16, fw * 0.22, fh * 0.17, fw * 0.05);
-    ctx.fillStyle = wood;
-    ctx.fill();
-    ctx.strokeStyle = woodLit;
-    ctx.lineWidth = fw * 0.022;
+    ctx.strokeStyle = hullDark;
+    ctx.lineWidth = fw * 0.02;
     ctx.stroke();
-
-    banner(cx, cy + fh * 0.13, 0.9);
+    bolts(ctx, cx, cy, fw * 0.34, 6, fw * 0.026, edge, Math.PI / 6);
+    core(fw * 0.19, true);
     return;
   }
 
   if (rank === 2) {
-    // -------------------------------------------------------------- Castle
-    // Round towers with roofs, and a keep that actually stands above the wall.
-    const wx = fw * 0.35;
-    const wy = fh * 0.31;
-
-    ctx.beginPath();
-    ctx.roundRect(cx - wx, cy - wy, wx * 2, wy * 2, fw * 0.03);
-    ctx.fillStyle = stone;
+    // --------------------------------------------------------- Command post
+    // The bunker grows a ring and four anchors: it is directing, not hiding.
+    ngon(ctx, cx, cy, fw * 0.36, 6, Math.PI / 6);
+    ctx.fillStyle = hull;
     ctx.fill();
-    ctx.strokeStyle = stoneDark;
+    ctx.strokeStyle = edge;
     ctx.lineWidth = fw * 0.03;
     ctx.stroke();
-
-    merlons(cx - wx + fw * 0.03, cy - wy + fh * 0.02, wx * 2 - fw * 0.06, fh * 0.065, stoneLit);
-
-    // The keep: taller than the wall, so the profile is unmistakable at a glance.
-    const kw = fw * 0.15;
-    const kh = fh * 0.15;
-    ctx.fillStyle = stoneLit;
-    ctx.fillRect(cx - kw, cy - kh, kw * 2, kh * 1.6);
-    ctx.strokeStyle = stoneDark;
-    ctx.lineWidth = fw * 0.02;
-    ctx.strokeRect(cx - kw, cy - kh, kw * 2, kh * 1.6);
-    merlons(cx - kw, cy - kh - fw * 0.05, kw * 2, fw * 0.05, stoneLit);
-    pitchedRoof(cx - fw * 0.02, cy - kh, kw * 1.15, fh * 0.16, roof);
-
-    roundTower(cx - fw * 0.3, cy - fh * 0.26, fw * 0.085, roof);
-    roundTower(cx + fw * 0.3, cy - fh * 0.26, fw * 0.085, roof);
-    roundTower(cx - fw * 0.3, cy + fh * 0.26, fw * 0.085, roof);
-    roundTower(cx + fw * 0.3, cy + fh * 0.26, fw * 0.085, roof);
-
-    banner(cx - fw * 0.2, cy + fh * 0.24, 0.72);
-    banner(cx + fw * 0.2, cy + fh * 0.24, 0.72);
+    ctx.beginPath();
+    ctx.arc(cx, cy, fw * 0.27, 0, Math.PI * 2);
+    ctx.strokeStyle = hullLit;
+    ctx.lineWidth = fw * 0.035;
+    ctx.stroke();
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      pylon(cx + sx * fw * 0.25, cy + sy * fh * 0.25, fw * 0.08);
+    }
+    core(fw * 0.21, true);
     return;
   }
 
   if (rank === 3) {
     // ------------------------------------------------------------- Citadel
-    // Twin walls, spired towers, and braziers burning along the parapet.
-    const wx = fw * 0.37;
-    const wy = fh * 0.33;
-
-    // Outer curtain.
-    ctx.beginPath();
-    ctx.roundRect(cx - wx, cy - wy, wx * 2, wy * 2, fw * 0.03);
-    ctx.fillStyle = stone;
+    // Twin walls with conduit spokes feeding the core from every flat.
+    ngon(ctx, cx, cy, fw * 0.39, 6, Math.PI / 6);
+    ctx.fillStyle = hull;
     ctx.fill();
-    ctx.strokeStyle = stoneDark;
+    ctx.strokeStyle = edge;
     ctx.lineWidth = fw * 0.03;
     ctx.stroke();
-    merlons(cx - wx + fw * 0.03, cy - wy + fh * 0.02, wx * 2 - fw * 0.06, fh * 0.06, stoneLit);
-
-    // Inner curtain, inset and taller: the double line is what says "citadel".
-    ctx.beginPath();
-    ctx.roundRect(cx - fw * 0.24, cy - fh * 0.22, fw * 0.48, fh * 0.44, fw * 0.03);
-    ctx.fillStyle = stoneLit;
+    ngon(ctx, cx, cy, fw * 0.27, 6, Math.PI / 6);
+    ctx.fillStyle = hullLit;
     ctx.fill();
-    ctx.strokeStyle = stoneDark;
+    ctx.strokeStyle = hullDark;
     ctx.lineWidth = fw * 0.022;
     ctx.stroke();
-    merlons(cx - fw * 0.21, cy - fh * 0.2, fw * 0.42, fh * 0.05, stoneLit);
 
-    const kw = fw * 0.1;
-    const kh = fh * 0.1;
-    ctx.fillStyle = stone;
-    ctx.fillRect(cx - kw, cy - kh, kw * 2, kh * 1.7);
-    ctx.strokeStyle = stoneDark;
-    ctx.lineWidth = fw * 0.018;
-    ctx.strokeRect(cx - kw, cy - kh, kw * 2, kh * 1.7);
-    pitchedRoof(cx, cy - kh, kw * 1.3, fh * 0.15, roof);
-
-    roundTower(cx - fw * 0.31, cy - fh * 0.28, fw * 0.08, roof, 8);
-    roundTower(cx + fw * 0.31, cy - fh * 0.28, fw * 0.08, roof, 8);
-    roundTower(cx - fw * 0.31, cy + fh * 0.28, fw * 0.08, roof, 8);
-    roundTower(cx + fw * 0.31, cy + fh * 0.28, fw * 0.08, roof, 8);
-
-    // Braziers on the four walls. The obvious "is anyone home" tell.
-    for (const [sx, sy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
-      const bx = cx + sx * fw * 0.33;
-      const by = cy + sy * fh * 0.29;
+    // Conduits from the outer wall to the core.
+    ctx.strokeStyle = glowRing;
+    ctx.lineWidth = fw * 0.012;
+    for (let i = 0; i < 6; i += 1) {
+      const a = Math.PI / 6 + (i / 6) * Math.PI * 2;
       ctx.beginPath();
-      ctx.arc(bx, by, fw * 0.032, 0, Math.PI * 2);
-      ctx.fillStyle = ember;
-      ctx.fill();
+      ctx.moveTo(cx + Math.cos(a) * fw * 0.15, cy + Math.sin(a) * fh * 0.15);
+      ctx.lineTo(cx + Math.cos(a) * fw * 0.37, cy + Math.sin(a) * fh * 0.37);
+      ctx.stroke();
     }
 
-    banner(cx - fw * 0.14, cy + fh * 0.22, 0.62);
-    banner(cx + fw * 0.14, cy + fh * 0.22, 0.62);
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      pylon(cx + sx * fw * 0.28, cy + sy * fh * 0.28, fw * 0.085);
+    }
+    core(fw * 0.23, true);
+    mast(cx - fw * 0.2, cy + fh * 0.1, fh * 0.32);
     return;
   }
 
   // ---------------------------------------------------------- Battlestation
-  // No longer a castle: an armoured hexagon with pods, a live core and a mast.
-  ngon(ctx, cx, cy, fw * 0.46, 6, Math.PI / 6);
-  ctx.fillStyle = `hsl(${h} 12% 30%)`;
+  // No longer a structure: a full armoured platform with pods and a live core.
+  ngon(ctx, cx, cy, fw * 0.44, 6, Math.PI / 6);
+  ctx.fillStyle = hull;
   ctx.fill();
-  ctx.strokeStyle = `hsl(${h} 20% 52%)`;
+  ctx.strokeStyle = edge;
   ctx.lineWidth = fw * 0.035;
   ctx.stroke();
 
-  // Armour banding, so the plate does not read as one flat hexagon.
-  ngon(ctx, cx, cy, fw * 0.36, 6, Math.PI / 6);
-  ctx.fillStyle = `hsl(${h} 14% 38%)`;
+  ngon(ctx, cx, cy, fw * 0.34, 6, Math.PI / 6);
+  ctx.fillStyle = hullLit;
   ctx.fill();
-  ctx.strokeStyle = `hsl(${h} 18% 22%)`;
+  ctx.strokeStyle = hullDark;
   ctx.lineWidth = fw * 0.02;
   ctx.stroke();
 
   // Turret pods, one per flat of the hexagon.
   for (let i = 0; i < 6; i += 1) {
     const a = (i / 6) * Math.PI * 2 + Math.PI / 6;
-    const px = cx + Math.cos(a) * fw * 0.35;
-    const py = cy + Math.sin(a) * fh * 0.33;
+    const px = cx + Math.cos(a) * fw * 0.33;
+    const py = cy + Math.sin(a) * fh * 0.31;
     ctx.beginPath();
-    ctx.arc(px, py, fw * 0.06, 0, Math.PI * 2);
+    ctx.arc(px, py, fw * 0.055, 0, Math.PI * 2);
     ctx.fillStyle = `hsl(${h} 16% 46%)`;
     ctx.fill();
+    ctx.strokeStyle = hullDark;
+    ctx.lineWidth = fw * 0.014;
+    ctx.stroke();
 
-    // A stubby barrel pointing outward. Short on purpose: these are defensive,
-    // and a long barrel would read as a weapon the structure does not have.
     ctx.save();
     ctx.translate(px, py);
     ctx.rotate(a);
     ctx.fillStyle = `hsl(${h} 18% 58%)`;
     ctx.beginPath();
-    ctx.roundRect(0, -fw * 0.018, fw * 0.11, fw * 0.036, fw * 0.014);
+    ctx.roundRect(0, -fw * 0.017, fw * 0.1, fw * 0.034, fw * 0.012);
     ctx.fill();
     ctx.restore();
   }
 
-  // Core: the one thing on the board that is unmistakably powered.
-  ctx.beginPath();
-  ctx.arc(cx, cy, fw * 0.17, 0, Math.PI * 2);
-  ctx.fillStyle = `hsl(${h} 16% 18%)`;
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx, cy, fw * 0.115, 0, Math.PI * 2);
-  ctx.fillStyle = core;
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx, cy, fw * 0.155 + pulse * fw * 0.012, 0, Math.PI * 2);
-  ctx.strokeStyle = `hsl(150 80% ${40 + pulse * 30}%)`;
-  ctx.lineWidth = fw * 0.022;
-  ctx.stroke();
-
-  // Signal mast with a blinking lamp.
-  ctx.strokeStyle = `hsl(${h} 20% 60%)`;
-  ctx.lineWidth = fw * 0.022;
-  ctx.beginPath();
-  ctx.moveTo(cx + fw * 0.2, cy - fh * 0.12);
-  ctx.lineTo(cx + fw * 0.2, cy - fh * 0.45);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(cx + fw * 0.2, cy - fh * 0.46, fw * 0.035, 0, Math.PI * 2);
-  ctx.fillStyle = pulse > 0.45 ? core : `hsl(${h} 14% 30%)`;
-  ctx.fill();
+  core(fw * 0.19, true);
+  mast(cx + fw * 0.19, cy - fh * 0.1, fh * 0.32);
 }
 
 /**
