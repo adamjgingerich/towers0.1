@@ -39,6 +39,129 @@ const FONTS = {
   bebas: '"Bebas Neue", "Arial Narrow", sans-serif',
   monoton: '"Monoton", "Segoe UI", sans-serif',
   sharetech: '"Share Tech Mono", Consolas, monospace',
+  michroma: '"Michroma", "Orbitron", sans-serif',
+  oswald: '"Oswald", "Arial Narrow", sans-serif',
+  jost: '"Jost", "Century Gothic", sans-serif',
+  rajdhani: '"Rajdhani", "Oswald", sans-serif',
+  chakra: '"Chakra Petch", "Share Tech Mono", sans-serif',
+  aldrich: '"Aldrich", "Michroma", sans-serif',
+  handjet: '"Handjet", "VT323", monospace',
+  spacemono: '"Space Mono", "Courier New", monospace',
+  tektur: '"Tektur", "Rajdhani", sans-serif',
+  majormono: '"Major Mono Display", "Space Mono", monospace',
+  doto: '"Doto", "Silkscreen", monospace',
+  bungee: '"Bungee", "Bebas Neue", sans-serif',
+};
+
+/**
+ * Default HUD size per typeface, in px (this becomes the rem base). Wide
+ * display faces -- pixel fonts especially -- need fewer pixels to hold the
+ * same amount of text as a monospaced face, so every theme keeps the same
+ * menu footprint. `pixel`/`silk` stay on their native 8px grid, which is also
+ * the only size they render crisp at.
+ */
+const FONT_SIZE = {
+  jetbrains: 13,
+  ibm: 13,
+  fira: 13,
+  vt323: 15,
+  pixel: 8,
+  silk: 8,
+  orbitron: 11,
+  audiowide: 10,
+  cinzel: 13,
+  elite: 13,
+  space: 13,
+  bebas: 15,
+  monoton: 9,
+  sharetech: 13,
+  michroma: 10,
+  oswald: 15,
+  jost: 14,
+  rajdhani: 14,
+  chakra: 13,
+  aldrich: 12,
+  handjet: 14,
+  spacemono: 13,
+  tektur: 13,
+  majormono: 11,
+  doto: 14,
+  bungee: 11,
+};
+
+/**
+ * Corner treatment per theme, as a full CSS `border-radius` shorthand.
+ *
+ * Deliberately a shorthand and not a size: several themes cut opposite corners
+ * so their panels read as LCARS consoles, Klingon blades or 70s sci-fi crates
+ * rather than as rounded web buttons, and a couple go full pill. Themes not
+ * listed here fall back to the neutral 8px.
+ */
+const RADIUS = {
+  // Terminals: square to barely there.
+  midnight: '6px',
+  terminal: '0',
+  amber: '3px',
+  ice: '3px',
+  vt100: '0',
+  tty: '0',
+  msdos: '0',
+
+  // Consoles: hand-held shells stay soft, cartridge-era plastic stays square.
+  gameboy: '10px',
+  'gameboy-pocket': '10px',
+  'gameboy-color': '12px',
+  pico8: '2px',
+  nes: '2px',
+  snes: '2px',
+  'virtual-boy': '16px',
+  atari: '2px',
+  c64: '5px',
+  doom: '0',
+  apple2: '5px',
+
+  // Film and TV get the cut-corner treatments.
+  tos: '10px 2px 10px 2px',
+  tng: '12px 2px 12px 2px',
+  klingon: '0 10px 0 10px',
+  matrix: '0',
+  bladerunner: '2px 12px 2px 12px',
+  alien: '3px 14px 3px 14px',
+  who: '999px',
+  dune: '2px',
+  odyssey: '10px',
+  tron: '14px 2px 14px 2px',
+
+  // Music and aesthetics: garage-sharp through to full pill.
+  whitestripes: '2px',
+  synthwave: '2px',
+  vaporwave: '18px',
+  cyberpunk: '1px',
+  rgb: '999px',
+
+  // Colour schemes: the same spread a real palette would imply.
+  solarized: '6px',
+  dracula: '8px',
+  nord: '4px',
+  gruvbox: '3px',
+  monokai: '8px',
+  'tokyo-night': '10px',
+  catppuccin: '12px',
+  'high-contrast': '0',
+  paper: '6px',
+
+  // Nature and time: weather is soft, desert is cut.
+  chrono: '8px',
+  aurora: '16px',
+  ocean: '18px',
+  desert: '2px 12px 2px 12px',
+  sakura: '16px',
+  forest: '4px',
+  coffee: '10px',
+
+  // Systems and brands.
+  win95: '0',
+  amiga: '5px',
 };
 
 /** One theme: a palette, an optional typeface, an optional text effect. */
@@ -47,8 +170,9 @@ const make = (id, name, group, font, colors, options = {}) => ({
   name,
   group,
   font,
-  size: options.size ?? 13,
+  size: options.size ?? FONT_SIZE[font] ?? 13,
   fx: options.fx ?? null,
+  radius: options.radius ?? RADIUS[id] ?? '8px',
   dynamic: Boolean(options.dynamic),
   vars: vars(...colors),
 });
@@ -64,34 +188,50 @@ export const THEMES = [
   make('msdos', 'MS-DOS', 'Terminals', 'ibm', ['#000000', '#0000aa', '#0000aa', '#3a3aff', '#c0c0c0', '#808080', '#ffff55', '#55ffff', '#55ff55', '#ff5555'], { fx: 'glow' }),
 
   // ------------------------------------------------------ Games & Consoles
-  make('gameboy', 'Game Boy', 'Games & Consoles', 'silk', ['#0f380f', '#306230', '#306230', '#8bac0f', '#9bbc0f', '#8bac0f', '#9bbc0f', '#9bbc0f', '#9bbc0f', '#9bbc0f'], { fx: 'glow' }),
+  /*
+    Game Boy, as hardware rather than as its screen. The DMG was a pale grey
+    shell with a near-black bezel and dark magenta A/B buttons, and that is
+    the palette here -- the olive-green LCD is deliberately not used. Type is
+    Silkscreen at 11px, roughly 40% larger than the other pixel themes run at,
+    which is the biggest size the single-row top bar can still hold.
+  */
+  make('gameboy', 'Game Boy', 'Games & Consoles', 'silk', ['#b9b5ac', '#d3cfc6', '#c2beb4', '#8f8b82', '#2b2926', '#6f6b62', '#a02f6e', '#2f4fa8', '#7a3fa0', '#c0272d'], { size: 11 }),
   make('gameboy-pocket', 'Game Boy Pocket', 'Games & Consoles', 'silk', ['#0a0a0a', '#1a1a1a', '#262626', '#4a4a4a', '#c8c8c8', '#8a8a8a', '#c8c8c8', '#c8c8c8', '#c8c8c8', '#c8c8c8']),
   make('gameboy-color', 'Game Boy Color', 'Games & Consoles', 'silk', ['#101820', '#203040', '#284860', '#4a6880', '#e0e8f0', '#8898a8', '#ffb040', '#58c8e0', '#58e080', '#ff6080'], { fx: 'pulse' }),
   make('pico8', 'PICO-8', 'Games & Consoles', 'silk', ['#000000', '#1d2b53', '#273561', '#5f574f', '#fff1e8', '#c2c3c7', '#ffa300', '#29adff', '#00e436', '#ff004d']),
-  make('nes', 'NES', 'Games & Consoles', 'pixel', ['#2a2a2a', '#3a3a3a', '#484848', '#707070', '#f0f0f0', '#a0a0a0', '#e0c060', '#60c0e0', '#70d070', '#e06060'], { size: 10 }),
-  make('snes', 'SNES', 'Games & Consoles', 'pixel', ['#1e1a2e', '#2c2844', '#3a3458', '#5a5478', '#e8e4f4', '#9890b8', '#f0c060', '#68c8e8', '#78d898', '#e87878'], { size: 10, fx: 'pulse' }),
-  make('virtual-boy', 'Virtual Boy', 'Games & Consoles', 'silk', ['#0a0000', '#1a0000', '#260000', '#4a0000', '#ff5050', '#c04040', '#ff8060', '#ff7060', '#ff5050', '#ff3030'], { fx: 'glow' }),
-  make('atari', 'Atari 2600', 'Games & Consoles', 'pixel', ['#101010', '#1c1c1c', '#282828', '#4a4a4a', '#ffa820', '#c08030', '#ffa820', '#ffb860', '#ffa820', '#ff6a40'], { size: 10, fx: 'glow' }),
-  make('c64', 'Commodore 64', 'Games & Consoles', 'vt323', ['#4040c0', '#3434a0', '#2c2c8c', '#6060d0', '#c0c0f0', '#8888c0', '#e0d060', '#78d0e0', '#78d890', '#e07878'], { size: 15, fx: 'pulse' }),
-  make('doom', 'DOOM', 'Games & Consoles', 'sharetech', ['#100804', '#1c0e06', '#281408', '#4a2410', '#ffb060', '#c08050', '#ff9040', '#ffc080', '#80c040', '#e04020'], { fx: 'glow' }),
-  make('apple2', 'Apple II', 'Games & Consoles', 'vt323', ['#000000', '#0a0f0a', '#142014', '#1e3a1e', '#a0ffb0', '#58a068', '#e0ff80', '#78ffd0', '#a0ffb0', '#ff8070'], { size: 16, fx: 'glow' }),
+  /* NES: red controller shell, charcoal cartridge, cream labels. */
+  make('nes', 'NES', 'Games & Consoles', 'pixel', ['#d9d5ca', '#bdb9b0', '#aaa69e', '#5b5960', '#241f28', '#68636b', '#bd2437', '#315a9e', '#477343', '#9e2937'], { size: 9, fx: 'glow' }),
+  /* SNES: lavender shell, blue-violet bezel, and four coloured face buttons. */
+  make('snes', 'SNES', 'Games & Consoles', 'pixel', ['#b9b5c8', '#a19caf', '#898399', '#514d61', '#24202f', '#686275', '#c44b70', '#4b70bd', '#5f9b76', '#a83b43'], { size: 9, fx: 'pulse' }),
+  make('virtual-boy', 'Virtual Boy', 'Games & Consoles', 'doto', ['#0a0000', '#1a0000', '#260000', '#4a0000', '#ff5050', '#c04040', '#ff8060', '#ff7060', '#ff5050', '#ff3030'], { fx: 'glow' }),
+  make('atari', 'Atari 2600', 'Games & Consoles', 'pixel', ['#101010', '#1c1c1c', '#282828', '#4a4a4a', '#ffa820', '#c08030', '#ffa820', '#ffb860', '#ffa820', '#ff6a40'], { fx: 'glow' }),
+  make('c64', 'Commodore 64', 'Games & Consoles', 'handjet', ['#4040c0', '#3434a0', '#2c2c8c', '#6060d0', '#c0c0f0', '#8888c0', '#e0d060', '#78d0e0', '#78d890', '#e07878'], { size: 15, fx: 'pulse' }),
+  make('doom', 'DOOM', 'Games & Consoles', 'chakra', ['#100804', '#1c0e06', '#281408', '#4a2410', '#ffb060', '#c08050', '#ff9040', '#ffc080', '#80c040', '#e04020'], { fx: 'glow' }),
+  make('apple2', 'Apple II', 'Games & Consoles', 'handjet', ['#000000', '#0a0f0a', '#142014', '#1e3a1e', '#a0ffb0', '#58a068', '#e0ff80', '#78ffd0', '#a0ffb0', '#ff8070'], { size: 16, fx: 'glow' }),
 
   // ----------------------------------------------------------- Movies & TV
-  make('tos', 'Star Trek: TOS', 'Movies & TV', 'orbitron', ['#0a1020', '#14203c', '#1e2c50', '#3c4a78', '#e8f0ff', '#88a0d0', '#f0c040', '#58b8e8', '#70d8a0', '#e05858'], { fx: 'glow' }),
-  make('tng', 'Star Trek: TNG', 'Movies & TV', 'orbitron', ['#101010', '#1a1a1a', '#242424', '#3a3a3a', '#e0dcc8', '#908c78', '#40c0f0', '#58b8d8', '#70c898', '#d06858'], { fx: 'pulse' }),
-  make('matrix', 'Matrix', 'Movies & TV', 'sharetech', ['#000000', '#031a03', '#062d06', '#0e4a0e', '#00ff41', '#3e9a4e', '#8dffa0', '#5effc9', '#00ff41', '#ff4040'], { fx: 'glow' }),
-  make('bladerunner', 'Blade Runner', 'Movies & TV', 'orbitron', ['#0a0804', '#14100a', '#1e1810', '#3a2a18', '#ffb860', '#c09050', '#ffd080', '#58c8e0', '#80c8a0', '#e06040'], { fx: 'glow' }),
-  make('alien', 'Alien', 'Movies & TV', 'elite', ['#080a06', '#10130a', '#161c0e', '#263018', '#c8e0a0', '#7a9860', '#d0b860', '#88c8c0', '#98d070', '#e06850'], { fx: 'pulse' }),
+  make('tos', 'Star Trek: TOS', 'Movies & TV', 'michroma', ['#0a1020', '#14203c', '#1e2c50', '#3c4a78', '#e8f0ff', '#88a0d0', '#f0c040', '#58b8e8', '#70d8a0', '#e05858'], { fx: 'glow' }),
+  make('tng', 'Star Trek: TNG', 'Movies & TV', 'oswald', ['#101010', '#1a1a1a', '#242424', '#3a3a3a', '#e0dcc8', '#908c78', '#40c0f0', '#58b8d8', '#70c898', '#d06858'], { fx: 'pulse' }),
+  /*
+    Klingon Empire: bronze plating and blood-red accents on near-black, with
+    the emblem's gold for anything the player is meant to reach for. The steel
+    is a bat'leth, the green is verdigris on bronze, and the corners are
+    squared off because Klingon design has no rounded anything.
+  */
+  make('klingon', 'Klingon Empire', 'Movies & TV', 'aldrich', ['#0b0606', '#1a0e08', '#26150c', '#5c3418', '#f4e4c8', '#a8865c', '#e6a422', '#8fa8b8', '#93b060', '#c22a1a'], { fx: 'glow' }),
+  make('matrix', 'Matrix', 'Movies & TV', 'majormono', ['#000000', '#031a03', '#062d06', '#0e4a0e', '#00ff41', '#3e9a4e', '#8dffa0', '#5effc9', '#00ff41', '#ff4040'], { fx: 'glow' }),
+  make('bladerunner', 'Blade Runner', 'Movies & TV', 'tektur', ['#0a0804', '#14100a', '#1e1810', '#3a2a18', '#ffb860', '#c09050', '#ffd080', '#58c8e0', '#80c8a0', '#e06040'], { fx: 'glow' }),
+  make('alien', 'Alien', 'Movies & TV', 'spacemono', ['#080a06', '#10130a', '#161c0e', '#263018', '#c8e0a0', '#7a9860', '#d0b860', '#88c8c0', '#98d070', '#e06850'], { fx: 'pulse' }),
   make('who', 'Doctor Who', 'Movies & TV', 'orbitron', ['#050a18', '#0a1430', '#101e48', '#203c78', '#b8d8ff', '#6890c0', '#f0c060', '#68c0e8', '#70d8b0', '#e07070'], { fx: 'pulse' }),
   make('dune', 'Dune', 'Movies & TV', 'cinzel', ['#180c04', '#241408', '#301c0c', '#50301a', '#f0d8b0', '#b89060', '#ffc060', '#e0a060', '#c0a060', '#d07040'], { fx: 'glow' }),
-  make('odyssey', '2001: A Space Odyssey', 'Movies & TV', 'space', ['#0a0a0e', '#141420', '#1e1e30', '#34344e', '#f0f0f8', '#9090b0', '#f0c060', '#78c8e8', '#80d8b0', '#e06050'], { fx: 'pulse' }),
+  make('odyssey', '2001: A Space Odyssey', 'Movies & TV', 'jost', ['#0a0a0e', '#141420', '#1e1e30', '#34344e', '#f0f0f8', '#9090b0', '#f0c060', '#78c8e8', '#80d8b0', '#e06050'], { fx: 'pulse' }),
   make('tron', 'TRON', 'Movies & TV', 'audiowide', ['#020408', '#06121c', '#0a1c2c', '#16384e', '#c8f0ff', '#5a9cc8', '#ffe080', '#40d8ff', '#50e0b8', '#ff6080'], { fx: 'glow' }),
 
   // ---------------------------------------------------- Music & Aesthetics
-  make('whitestripes', 'The White Stripes', 'Music & Aesthetics', 'bebas', ['#100000', '#1c0000', '#260000', '#4a0000', '#f0e8e8', '#c08080', '#e04040', '#e05858', '#a02020', '#e04040'], { size: 14, fx: 'pulse' }),
+  make('whitestripes', 'The White Stripes', 'Music & Aesthetics', 'bungee', ['#100000', '#1c0000', '#260000', '#4a0000', '#f0e8e8', '#c08080', '#e04040', '#e05858', '#a02020', '#e04040'], { fx: 'pulse' }),
   make('synthwave', 'Synthwave', 'Music & Aesthetics', 'audiowide', ['#0e0020', '#1a0033', '#260047', '#54239c', '#f0e3ff', '#a581d4', '#ffd166', '#4dd6ff', '#7dffc8', '#ff4d6d'], { fx: 'glow' }),
-  make('vaporwave', 'Vaporwave', 'Music & Aesthetics', 'monoton', ['#0a0a1e', '#14142e', '#1e1e40', '#3a3a6a', '#ff9ad8', '#b06ad0', '#ffd166', '#66e0ff', '#7dffc8', '#ff6ab0'], { size: 14, fx: 'pulse' }),
-  make('cyberpunk', 'Cyberpunk 2077', 'Music & Aesthetics', 'audiowide', ['#0a0a04', '#141408', '#1e1e0c', '#3a3a18', '#f0f0b0', '#a0a060', '#ffe020', '#20e0e0', '#20e080', '#e02040'], { fx: 'glow' }),
+  make('vaporwave', 'Vaporwave', 'Music & Aesthetics', 'monoton', ['#0a0a1e', '#14142e', '#1e1e40', '#3a3a6a', '#ff9ad8', '#b06ad0', '#ffd166', '#66e0ff', '#7dffc8', '#ff6ab0'], { fx: 'pulse' }),
+  make('cyberpunk', 'Cyberpunk 2077', 'Music & Aesthetics', 'rajdhani', ['#0a0a04', '#141408', '#1e1e0c', '#3a3a18', '#f0f0b0', '#a0a060', '#ffe020', '#20e0e0', '#20e080', '#e02040'], { fx: 'glow' }),
   make('rgb', 'RGB Rave', 'Music & Aesthetics', 'jetbrains', ['#08080f', '#10101c', '#171728', '#2c2c4a', '#ff4dd6', '#b39bff', '#ffd166', '#00f0ff', '#4dff88', '#ff3b5c'], { fx: 'rgb' }),
 
   // ---------------------------------------------------------- Color Schemes
@@ -150,6 +290,7 @@ export function applyTheme(id) {
   for (const [key, value] of Object.entries(palette)) root.style.setProperty(key, value);
   root.style.setProperty('--font', FONTS[theme.font] ?? FONTS.jetbrains);
   root.style.setProperty('--font-size', `${theme.size ?? 13}px`);
+  root.style.setProperty('--radius', theme.radius ?? '8px');
   root.dataset.theme = theme.id;
 
   const fxClass = theme.fx ? `theme-${theme.fx}` : null;

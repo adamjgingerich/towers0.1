@@ -39,6 +39,74 @@ function reachBadge(def) {
   return REACH_BADGES.both;
 }
 
+/**
+ * How each meta stat is written for the player.
+ *
+ * `show` receives the *combined* value for a number of ranks (flats already
+ * multiplied, multipliers already raised to the power), so the same function
+ * prints both "per rank" and "at rank N". Anything missing from this table is
+ * simply not printed rather than printed wrongly.
+ */
+const SKILL_STAT_TEXT = {
+  startCoins: { name: 'starting coins', show: (v) => `+${v}` },
+  baseHp: { name: 'base health', show: (v) => `+${v}` },
+  towerCap: { name: 'tower capacity', show: (v) => `+${v}` },
+  startLevel: { name: 'starting tower level', show: (v) => `+${v}` },
+  critChance: { name: 'crit chance', show: (v) => `+${pct(v)}` },
+  interestBase: { name: 'savings interest', show: (v) => `+${pct(v)}` },
+  sellRefund: { name: 'sell refund', show: (v) => `+${pct(v)}` },
+  waveBonus: { name: 'wave clear bonus', show: (v) => `+${v} coins` },
+  towerDamage: { name: 'tower damage', show: (v) => `${signedPct(v - 1)}` },
+  towerRange: { name: 'tower range', show: (v) => `${signedPct(v - 1)}` },
+  towerRate: { name: 'fire rate', show: (v) => `${signedPct(v - 1)}` },
+  upgradeCost: { name: 'upgrade cost', show: (v) => `-${pct(1 - v)}` },
+  specCost: { name: 'specialisation cost', show: (v) => `-${pct(1 - v)}` },
+};
+
+function pct(fraction) {
+  const value = fraction * 100;
+  return `${Number(value.toFixed(1))}%`;
+}
+
+function signedPct(fraction) {
+  const value = fraction * 100;
+  return `${value >= 0 ? '+' : ''}${Number(value.toFixed(1))}%`;
+}
+
+/** The combined value of one effect across `rank` ranks. */
+function skillEffectValue(effect, rank) {
+  if (rank <= 0) return effect.kind === 'mult' ? 1 : 0;
+  return effect.kind === 'mult' ? effect.value ** rank : effect.value * rank;
+}
+
+/** "tower damage +4% per rank", one clause per effect. */
+function skillEffectText(node) {
+  const parts = [];
+  for (const effect of node.effects) {
+    const text = SKILL_STAT_TEXT[effect.stat];
+    if (!text) continue;
+    parts.push(`${text.name} ${text.show(skillEffectValue(effect, 1))} per rank`);
+  }
+  return parts.join(' · ');
+}
+
+/** "rank 2 of 5: +8.2% tower damage · at max: +21.7%" */
+function skillTotalText(node) {
+  const parts = [];
+  for (const effect of node.effects) {
+    const text = SKILL_STAT_TEXT[effect.stat];
+    if (!text) continue;
+    const atMax = text.show(skillEffectValue(effect, node.maxRank));
+    if (node.rank > 0) {
+      const now = text.show(skillEffectValue(effect, node.rank));
+      parts.push(`${text.name}: ${now} now, ${atMax} at max`);
+    } else {
+      parts.push(`${text.name}: ${atMax} at max rank`);
+    }
+  }
+  return parts.join(' · ');
+}
+
 export class Overlay {
   /**
    * @param {object} callbacks
@@ -113,6 +181,7 @@ export class Overlay {
       btnSkills: $('btn-skills'),
       skillsPanel: $('skills-panel'),
       skillsList: $('skills-list'),
+      skillsBranches: $('skills-branches'),
       skillsCores: $('skills-cores'),
       skillsHint: $('skills-hint'),
       btnSkillsClose: $('btn-skills-close'),
@@ -550,8 +619,12 @@ export class Overlay {
 
     this._set(this.el.skillsCores, String(skills?.cores ?? 0));
     this._set(this.el.skillsHint, skills?.hasName
-      ? 'Earned every wave you survive, on every map. Buffs apply from the next run.'
+      ? 'Cores arrive on their own -- at least one for every wave you survive, more on '
+        + 'harder difficulties and deeper waves. Nothing is spent for you: you choose the '
+        + 'branch and the node. A purchase takes effect from the next run.'
       : 'Choose a character first — the tree belongs to a character.');
+
+    this._renderBranchLegend(branches);
 
     const list = this.el.skillsList;
     list.innerHTML = '';
@@ -577,6 +650,11 @@ export class Overlay {
       name.append(label, tag);
       row.appendChild(name);
 
+      const rankTag = document.createElement('span');
+      rankTag.className = 'skill-rank';
+      rankTag.textContent = `${node.rank} / ${node.maxRank}`;
+      row.appendChild(rankTag);
+
       const pips = document.createElement('span');
       pips.className = 'skill-pips';
       for (let i = 0; i < node.maxRank; i += 1) {
@@ -592,6 +670,16 @@ export class Overlay {
       desc.textContent = node.desc;
       row.appendChild(desc);
 
+      const effect = document.createElement('div');
+      effect.className = 'skill-effect';
+      effect.textContent = skillEffectText(node);
+      row.appendChild(effect);
+
+      const total = document.createElement('div');
+      total.className = 'skill-total';
+      total.textContent = skillTotalText(node);
+      row.appendChild(total);
+
       const buy = document.createElement('button');
       buy.type = 'button';
       buy.className = 'skill-buy';
@@ -604,18 +692,43 @@ export class Overlay {
           .map((id) => byId.get(id)?.name ?? id);
         buy.textContent = 'Locked';
         buy.disabled = true;
+        buy.title = missing.length > 0
+          ? `Needs a rank of: ${missing.join(', ')}`
+          : 'Locked';
         desc.textContent = missing.length > 0
-          ? `${node.desc} Requires: ${missing.join(', ')}.`
+          ? `${node.desc} Needs: ${missing.join(', ')}.`
           : node.desc;
       } else {
-        buy.textContent = `\u25C6 ${node.nextCost}`;
-        buy.title = `Buy the next rank for ${node.nextCost} Cores`;
+        buy.textContent = `Buy \u25C6 ${node.nextCost}`;
+        buy.title = `Spend ${node.nextCost} Cores on rank ${node.rank + 1} of ${node.maxRank}`;
         buy.disabled = (skills?.cores ?? 0) < node.nextCost;
         buy.addEventListener('click', () => this.cb.onBuySkill(node.id));
       }
       row.appendChild(buy);
 
       list.appendChild(row);
+    }
+  }
+
+  /** One legend row per branch: colour, name, and what the branch is for. */
+  _renderBranchLegend(branches) {
+    const box = this.el.skillsBranches;
+    if (!box) return;
+    box.innerHTML = '';
+    for (const branch of branches) {
+      const row = document.createElement('div');
+      row.className = 'skill-legend';
+      row.style.setProperty('--branch', branch.color);
+      const swatch = document.createElement('span');
+      swatch.className = 'swatch';
+      const name = document.createElement('span');
+      name.className = 'lname';
+      name.textContent = branch.name;
+      const blurb = document.createElement('span');
+      blurb.className = 'lblurb';
+      blurb.textContent = branch.blurb ?? '';
+      row.append(swatch, name, blurb);
+      box.appendChild(row);
     }
   }
 
@@ -848,10 +961,12 @@ export class Overlay {
   }
 
   _syncFullscreen() {
-    if (!this.el.btnFullscreen) return;
+    const btn = this.el.btnFullscreen;
+    if (!btn) return;
     const active = Boolean(document.fullscreenElement);
-    this._set(this.el.btnFullscreen, active ? 'Window' : 'Full');
-    this.el.btnFullscreen.title = active ? 'Exit fullscreen (Esc)' : 'Toggle fullscreen';
+    // The button holds both glyphs; CSS shows the one matching this state.
+    btn.dataset.on = active ? '1' : '0';
+    btn.title = active ? 'Exit fullscreen (Esc)' : 'Toggle fullscreen';
   }
 
   /**
@@ -931,10 +1046,9 @@ export class Overlay {
 
     // Controls.
     this.el.early.disabled = phase !== PREP;
-    this._set(
-      this.el.pause,
-      view.paused ? 'Resume' : 'Pause',
-    );
+    const pauseLabel = view.paused ? 'Resume the run' : 'Pause the run';
+    this.el.pause.setAttribute('aria-label', pauseLabel);
+    this.el.pause.title = `${pauseLabel} (Space)`;
     if (this.el.pause.classList.contains('active') !== view.paused) {
       this.el.pause.classList.toggle('active', view.paused);
     }

@@ -19,13 +19,17 @@
     </script>
 
     <!--
-      The monospace programming font. Falls back to local equivalents when the
-      CDN is unreachable, so the game never loses its typeface.
+      Typefaces, one per period or franchise the themes reference: pixel faces
+      for the consoles, terminal faces for the CRTs, and period-correct display
+      faces for the film themes (Michroma stands in for Eurostile on the Trek
+      themes, Jost for Futura on 2001, Rajdhani is the face Cyberpunk 2077
+      actually uses). Falls back to local equivalents when the CDN is
+      unreachable, so the game never loses its typeface.
     -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&family=Fira+Code:wght@400;600&family=VT323&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=Orbitron:wght@400;700&family=Audiowide&family=Cinzel:wght@400;700&family=Special+Elite&family=Space+Grotesk:wght@400;700&family=Bebas+Neue&family=Monoton&family=Share+Tech+Mono&display=swap"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&family=Fira+Code:wght@400;600&family=VT323&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=Orbitron:wght@400;700&family=Audiowide&family=Cinzel:wght@400;700&family=Special+Elite&family=Space+Grotesk:wght@400;700&family=Bebas+Neue&family=Monoton&family=Share+Tech+Mono&family=Michroma&family=Oswald:wght@400;600&family=Jost:wght@400;600&family=Rajdhani:wght@500;600&family=Chakra+Petch:wght@400;600&family=Aldrich&family=Handjet&family=Space+Mono&family=Tektur&family=Major+Mono+Display&family=Doto&family=Bungee&display=swap"
       rel="stylesheet"
     />
 
@@ -43,7 +47,7 @@
         --red: #e87878;
         --radius: 8px;
         --font: "Press Start 2P", "Courier New", monospace;
-        --font-size: 10px;
+        --font-size: 8px;
 
         /*
           Layout budget. The board is a fixed 40:24, so on a typical widescreen
@@ -58,6 +62,16 @@
       * {
         box-sizing: border-box;
         font-family: var(--font);
+      }
+
+      /*
+        The rem scale. Every `font-size: Nrem` below is a fraction of this, so
+        a theme's `--font-size` rescales the whole HUD -- not just body text.
+        Monospace themes run at 13px; wide pixel faces drop to 8px and stay
+        crisp while holding the same amount of text per line.
+      */
+      html {
+        font-size: var(--font-size);
       }
 
       html,
@@ -83,7 +97,22 @@
       */
       .shop-item .tname {
         color: var(--green);
-        text-transform: uppercase;
+      }
+
+      /*
+        Lowercase chrome, in every theme. The HUD reads as a quiet console
+        readout rather than a shouting menu.
+
+        Buttons and inputs are listed by hand: form controls do not inherit
+        `text-transform` from their ancestors, so the inherited rule alone
+        leaves every button still shouting.
+      */
+      #app,
+      #app button,
+      #app input,
+      #app select,
+      .toast {
+        text-transform: lowercase;
       }
 
       /* Only three rows: a thin header, the board, a thin shop strip. */
@@ -123,17 +152,128 @@
         color: #d6efff;
       }
 
+      /*
+        Button detail. Two layers ride on every button, both on pseudo-elements
+        so they never touch its own text or background:
+
+        - `::after` is the shine: a highlight parked off the left edge that
+          sweeps across the face on hover. It moves by `background-position`
+          rather than `transform`, so the sweep is clipped by the button's own
+          rounded rect and none of its ancestors need `overflow: hidden`.
+        - `::before` is a rainbow ring: a conic gradient masked down to a 1px
+          frame that fades in on hover and hue-rotates while the pointer is on
+          the button, so hovering cycles the spectrum under your finger.
+
+        Both are cheap -- a background position and a filter, no layout.
+      */
+      button {
+        position: relative;
+      }
+
+      button::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        background-image: linear-gradient(
+          100deg,
+          transparent 42%,
+          rgba(255, 255, 255, 0.42) 50%,
+          transparent 58%
+        );
+        background-size: 260% 100%;
+        background-repeat: no-repeat;
+        background-position: 135% 0;
+        opacity: 0;
+      }
+
+      button:hover:not(:disabled)::after {
+        opacity: 1;
+        animation: btn-shine 0.6s ease-out;
+      }
+
+      @keyframes btn-shine {
+        from {
+          background-position: 135% 0;
+        }
+        to {
+          background-position: -135% 0;
+        }
+      }
+
+      button::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 1px;
+        pointer-events: none;
+        background: conic-gradient(
+          from 0deg,
+          #ff4d4d,
+          #ffa64d,
+          #ffee4d,
+          #4dff88,
+          #4dd2ff,
+          #8f6bff,
+          #ff4dd2,
+          #ff4d4d
+        );
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        mask-composite: exclude;
+        opacity: 0;
+        transition: opacity 0.16s ease;
+      }
+
+      button:hover:not(:disabled)::before,
+      button:focus-visible::before {
+        opacity: 1;
+        animation: rgb-cycle 2.4s linear infinite;
+      }
+
+      /* A press should read as a press. */
+      button:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      button:focus-visible {
+        outline: 1px solid var(--cyan);
+        outline-offset: 1px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        button::after,
+        button::before {
+          animation: none;
+        }
+      }
+
       /* ------------------------------------------------------------ topbar */
 
       #topbar {
         display: flex;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 3px 16px;
+        flex-wrap: nowrap;
+        gap: 3px 10px;
         padding: var(--bar-pad);
         background: var(--panel);
         border-bottom: 1px solid var(--line);
         min-width: 0;
+        /*
+          The header is a single row. If the controls ever outgrow the window
+          the bar scrolls sideways instead of wrapping into a second row and
+          eating map height.
+        */
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+      }
+
+      #topbar::-webkit-scrollbar {
+        display: none;
       }
 
       /*
@@ -145,6 +285,7 @@
       .stats {
         display: flex;
         align-items: center;
+        flex: 0 0 auto;
         gap: 3px 10px;
         min-width: 0;
       }
@@ -158,14 +299,13 @@
 
       .stat .label {
         color: var(--muted);
-        font-size: 8px;
-        text-transform: uppercase;
+        font-size: 0.62rem;
         letter-spacing: 0.06em;
       }
 
       .stat .value {
         font-variant-numeric: tabular-nums;
-        font-size: 12px;
+        font-size: 0.92rem;
         font-weight: 650;
       }
 
@@ -179,21 +319,34 @@
         color: var(--green);
       }
 
-      /* Phase and wave composition share whatever space the stats leave. */
+      /*
+        Phase and wave composition share whatever space the stats leave.
+        It grows into free space but is also allowed to shrink back, ellipsing
+        the countdown rather than pushing the controls off the bar's edge -- the
+        countdown is recoverable at a glance, a hidden button is not.
+
+        `overflow: hidden` is load-bearing: without it the nowrap countdown
+        spills out of its shrunken box and *extends the bar's scroll region*,
+        which shows up as a phantom horizontal scroll at widths where nothing
+        is actually too wide.
+      */
       #status {
-        flex: 1 1 180px;
+        flex: 1 1 0;
         display: flex;
         align-items: baseline;
         gap: 14px;
         min-width: 0;
-        font-size: 10px;
+        overflow: hidden;
+        font-size: 0.77rem;
       }
 
       #phase {
         color: var(--green);
-        text-transform: uppercase;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       #wave-preview {
@@ -207,14 +360,111 @@
       .controls {
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: 4px;
         flex: 0 0 auto;
       }
 
       /* Compact: the top bar is vertical budget, so its buttons are small. */
       .controls button {
         padding: 3px 8px;
-        font-size: 11px;
+        font-size: 0.85rem;
+      }
+
+      /*
+        Icon buttons. Square, compact, and glyph-only: the top bar is vertical
+        budget, so the familiar shape does the work and the title/aria-label
+        carries the full explanation. A solid theme-contrast face and a larger
+        stroke keep the actions readable in light shells and dark bezels alike.
+
+        Selector is `.controls button.icon-btn`, not `.icon-btn`: against the
+        shorter one, `.controls button` wins the padding fight, and the glyph
+        ends up shoved against one edge of a box that still has 8px of padding
+        in it. Flex centring rather than grid, so an oversized glyph still
+        lands dead centre instead of spilling to one side.
+      */
+      .controls button.icon-btn {
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--text);
+        border-color: var(--text);
+        color: var(--bg);
+        line-height: 0;
+      }
+
+      .icon-btn svg {
+        width: 1.2rem;
+        height: 1.2rem;
+        display: block;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .controls button.icon-btn:hover:not(:disabled),
+      .controls button.icon-btn:focus-visible {
+        background: var(--amber);
+        border-color: var(--amber);
+        color: var(--bg);
+      }
+
+      /* Fullscreen swaps between the expand and collapse glyphs. */
+      .icon-btn .ico-collapse {
+        display: none;
+      }
+
+      .icon-btn[data-on='1'] .ico-expand {
+        display: none;
+      }
+
+      .icon-btn[data-on='1'] .ico-collapse {
+        display: block;
+      }
+
+      /* Stateful actions keep their useful text, but share the same bold icon language. */
+      .control-symbol {
+        width: 1rem;
+        height: 1rem;
+        margin-right: 0.35rem;
+        vertical-align: -0.18rem;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .controls button#btn-early,
+      .controls button#btn-pause {
+        background: var(--text);
+        border-color: var(--text);
+        color: var(--bg);
+      }
+
+      .controls button#btn-early:hover:not(:disabled),
+      .controls button#btn-pause:hover:not(:disabled),
+      .controls button#btn-early:focus-visible,
+      .controls button#btn-pause:focus-visible {
+        background: var(--amber);
+        border-color: var(--amber);
+        color: var(--bg);
+      }
+
+      .controls button#btn-pause.icon-btn {
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+      }
+
+      .controls button#btn-pause .control-symbol {
+        width: 1.2rem;
+        height: 1.2rem;
+        margin: 0;
       }
 
       #speeds {
@@ -228,11 +478,21 @@
         border: 0;
         border-right: 1px solid var(--line);
         border-radius: 0;
-        padding: 3px 7px;
-        font-size: 11px;
+        padding: 3px 5px;
+        font-size: 0.85rem;
       }
       #speeds button:last-child {
         border-right: 0;
+      }
+
+      /*
+        The early-call control is the busiest thing on the bar, so it runs a
+        step smaller than its neighbours. Its label is deliberately terse --
+        the tooltip and aria-label spell the action out in full.
+      */
+      .controls button#btn-early {
+        padding: 2px 7px;
+        font-size: 0.77rem;
       }
 
       /* ------------------------------------------------------ theme */
@@ -243,9 +503,9 @@
         border: 1px solid var(--line);
         border-radius: var(--radius);
         padding: 3px 6px;
-        font-size: 11px;
+        font-size: 0.85rem;
         font-family: inherit;
-        max-width: 132px;
+        max-width: 108px;
         cursor: pointer;
       }
 
@@ -263,6 +523,15 @@
       @keyframes rgb-cycle {
         from { filter: hue-rotate(0deg); }
         to   { filter: hue-rotate(360deg); }
+      }
+
+      /*
+        ...and in that theme the ring never switches off, so the whole control
+        strip cycles the spectrum even when nothing is under the pointer.
+      */
+      body.theme-rgb button::before {
+        opacity: 0.9;
+        animation: rgb-cycle 3.2s linear infinite;
       }
 
       /* Soft phosphor glow on the interactive readouts. */
@@ -286,6 +555,216 @@
         50% { opacity: 0.68; }
       }
 
+      /*
+        Game Boy. The bars are the console's pale grey shell and the board is
+        framed by the dark screen bezel, so the chrome reads as the hardware
+        the game is being played on rather than as a recoloured menu.
+      */
+      html[data-theme='gameboy'] #topbar {
+        background: linear-gradient(180deg, #e0dcd3, #cbc7be);
+        border-bottom: 3px solid #43413c;
+        /* Larger type than the other pixel themes, so the bar's gaps are
+           tighter to keep every control on one row. */
+        gap: 3px 8px;
+      }
+
+      html[data-theme='gameboy'] #shop-bar {
+        background: linear-gradient(0deg, #e0dcd3, #cbc7be);
+        border-top: 3px solid #43413c;
+      }
+
+      html[data-theme='gameboy'] #board-area {
+        background: #43413c;
+      }
+
+      /* The D-pad's near-black, so the glyph buttons match the hardware. */
+      html[data-theme='gameboy'] .controls button.icon-btn {
+        background: #e0dcd3 !important;
+        border-color: #2b2926 !important;
+        color: #2b2926 !important;
+      }
+
+      html[data-theme='gameboy'] .tp-title,
+      html[data-theme='gameboy'] .ip-head,
+      html[data-theme='gameboy'] .skills-currency-label {
+        color: #a02f6e;
+      }
+
+      /*
+        Game Boy runs ~40% larger type than the other pixel themes, and its
+        stats strip changes width as coins and kills grow, so its bar has to
+        shed its low-value controls well before the global thresholds do.
+        Order is the same as everywhere else: slider first, then the optional
+        readouts, then the strip itself.
+      */
+      @media (max-width: 1500px) {
+        html[data-theme='gameboy'] #difficulty {
+          display: none;
+        }
+      }
+
+      @media (max-width: 1200px) {
+        html[data-theme='gameboy'] .stat-optional {
+          display: none;
+        }
+      }
+
+      @media (max-width: 1040px) {
+        html[data-theme='gameboy'] .stats {
+          display: none;
+        }
+      }
+
+      @media (max-width: 780px) {
+        html[data-theme='gameboy'] #theme-select {
+          max-width: 64px;
+        }
+      }
+
+      /*
+        NES and SNES: two cartridge-era consoles, two shells.
+
+        NES uses the original warm grey and red controller language: a red
+        power stripe, charcoal screen bezel, cream controls. SNES uses the
+        lavender Super Famicom shell and lets the four face-button colours
+        appear in the interactive chrome. Both run the pixel type one step
+        larger than the old 8px preset, while keeping their bar on one row.
+      */
+      html[data-theme='nes'] #topbar {
+        background: linear-gradient(180deg, #d9d5ca, #bdb9b0);
+        border-bottom: 3px solid #bd2437;
+        gap: 3px 8px;
+      }
+
+      html[data-theme='nes'] #shop-bar {
+        background: linear-gradient(0deg, #d9d5ca, #bdb9b0);
+        border-top: 3px solid #bd2437;
+      }
+
+      html[data-theme='nes'] #board-area {
+        background: #241f28;
+      }
+
+      html[data-theme='nes'] .controls button.icon-btn {
+        background: #f0ece2 !important;
+        border-color: #241f28 !important;
+        color: #241f28 !important;
+      }
+
+      html[data-theme='nes'] #theme-select,
+      html[data-theme='nes'] #difficulty {
+        border-color: #5b5960;
+      }
+
+      html[data-theme='snes'] #topbar {
+        background: linear-gradient(180deg, #c7c2d5, #a19caf);
+        border-bottom: 3px solid #514d61;
+        gap: 3px 8px;
+      }
+
+      html[data-theme='snes'] #shop-bar {
+        background: linear-gradient(0deg, #c7c2d5, #a19caf);
+        border-top: 3px solid #514d61;
+      }
+
+      html[data-theme='snes'] #board-area {
+        background: #24202f;
+      }
+
+      html[data-theme='snes'] .controls button.icon-btn {
+        background: #f1edf7 !important;
+        border-color: #24202f !important;
+        color: #24202f !important;
+      }
+
+      html[data-theme='snes'] #stat-coins,
+      html[data-theme='snes'] .shop-item .tcost {
+        color: #c44b70;
+      }
+
+      html[data-theme='snes'] #stat-base,
+      html[data-theme='snes'] .shop-item .treach.aa {
+        color: #4b70bd;
+      }
+
+      html[data-theme='snes'] #stat-best,
+      html[data-theme='snes'] .shop-item .treach.gnd {
+        color: #5f9b76;
+      }
+
+      @media (max-width: 1320px) {
+        html[data-theme='nes'] #difficulty .dlabel,
+        html[data-theme='snes'] #difficulty .dlabel {
+          display: none;
+        }
+      }
+
+      @media (max-width: 1200px) {
+        html[data-theme='nes'] #difficulty,
+        html[data-theme='snes'] #difficulty {
+          display: none;
+        }
+      }
+
+      @media (max-width: 1000px) {
+        html[data-theme='nes'] .stat-optional,
+        html[data-theme='snes'] .stat-optional {
+          display: none;
+        }
+      }
+
+      @media (max-width: 820px) {
+        html[data-theme='nes'] .stats,
+        html[data-theme='snes'] .stats {
+          display: none;
+        }
+      }
+
+      /*
+        Virtual Boy is the one theme that breaks the bar on its own. Doto is a
+        dot-matrix face, so it is by far the widest at the same nominal size:
+        it still needs shedding past 1500px, where every other theme has room
+        to spare. Two steps, cheapest information first, same order as the
+        global ladder.
+      */
+      @media (max-width: 1570px) {
+        html[data-theme='virtual-boy'] .stat-optional {
+          display: none;
+        }
+      }
+
+      @media (max-width: 1340px) {
+        html[data-theme='virtual-boy'] .stats {
+          display: none;
+        }
+      }
+
+      /*
+        Klingon Empire. The bars take bronze hull plating with the emblem's
+        gold along the seam, and the section headings are struck in that same
+        gold, so the theme reads as a Klingon console rather than a recoloured
+        menu. Corners come from the theme's `radius` (2px) -- squared off,
+        because Klingon design has no rounded anything.
+      */
+      html[data-theme='klingon'] #topbar {
+        background: linear-gradient(180deg, #2a1409, #1a0e08 55%, #2e0f0c);
+        border-bottom: 2px solid #8a5a20;
+        box-shadow: inset 0 -1px 0 rgba(230, 164, 34, 0.55);
+      }
+
+      html[data-theme='klingon'] #shop-bar {
+        background: linear-gradient(0deg, #2a1409, #1a0e08 55%, #2e0f0c);
+        border-top: 2px solid #8a5a20;
+        box-shadow: inset 0 1px 0 rgba(230, 164, 34, 0.4);
+      }
+
+      html[data-theme='klingon'] .tp-title,
+      html[data-theme='klingon'] .ip-head,
+      html[data-theme='klingon'] .skills-currency-label {
+        color: var(--amber);
+        text-shadow: 0 0 6px rgba(230, 164, 34, 0.45);
+      }
+
       /* ------------------------------------------------------ difficulty */
 
       /*
@@ -302,7 +781,7 @@
         border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: var(--radius);
         background: rgba(255, 255, 255, 0.02);
-        font-size: 9px;
+        font-size: 0.69rem;
         opacity: 0.5;
         transition: opacity 120ms ease, border-color 120ms ease;
         /* Shrinkable, so a narrow window drops the slider before the buttons. */
@@ -357,7 +836,7 @@
         border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: var(--radius);
         background: rgba(255, 255, 255, 0.02);
-        font-size: 9px;
+        font-size: 0.69rem;
         opacity: 0.5;
         transition: opacity 120ms ease, border-color 120ms ease;
         min-width: 0;
@@ -404,10 +883,9 @@
         border-radius: 999px;
         background: rgba(14, 19, 26, 0.86);
         color: var(--amber);
-        font-size: 12px;
+        font-size: 0.92rem;
         font-weight: 700;
         letter-spacing: 0.08em;
-        text-transform: uppercase;
         pointer-events: none;
       }
 
@@ -416,7 +894,7 @@
         border-radius: 4px;
         background: #0e131a;
         color: var(--muted);
-        font-size: 10px;
+        font-size: 0.77rem;
         letter-spacing: 0.04em;
       }
 
@@ -452,14 +930,14 @@
       }
 
       #weather-badge .wb-name {
-        font-size: 11px;
+        font-size: 0.85rem;
         font-weight: 650;
         letter-spacing: 0.02em;
       }
 
       #weather-badge .wb-effects {
         color: var(--muted);
-        font-size: 10px;
+        font-size: 0.77rem;
         line-height: 1.35;
       }
 
@@ -482,6 +960,15 @@
       #board {
         position: relative;
         overflow: hidden;
+        /*
+          The viewer's frame picks up the active palette without tinting the
+          board itself. Cyan carries the cool edge of the theme; amber adds a
+          low second note so warm themes do not read flat. `color-mix` keeps
+          the alpha subtle even when a theme uses a very saturated colour.
+        */
+        box-shadow:
+          0 0 24px color-mix(in srgb, var(--cyan) 24%, transparent),
+          0 0 7px color-mix(in srgb, var(--amber) 18%, transparent);
       }
 
       #game {
@@ -531,7 +1018,7 @@
         border: 1px solid rgba(38, 48, 62, 0.55);
         border-radius: 999px;
         color: var(--muted);
-        font-size: 11px;
+        font-size: 0.85rem;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -592,7 +1079,7 @@
         border: 1px solid var(--line);
         border-radius: 6px;
         color: var(--muted);
-        font-size: 16px;
+        font-size: 1.23rem;
         line-height: 1;
         cursor: pointer;
       }
@@ -621,8 +1108,7 @@
         gap: 8px;
         margin-bottom: 4px;
         color: var(--muted);
-        font-size: 10px;
-        text-transform: uppercase;
+        font-size: 0.77rem;
         letter-spacing: 0.06em;
       }
 
@@ -710,7 +1196,7 @@
       }
 
       .ins-name {
-        font-size: 15px;
+        font-size: 1.15rem;
         font-weight: 650;
       }
 
@@ -725,7 +1211,7 @@
         grid-template-columns: auto 1fr;
         gap: 4px 12px;
         margin: 0 0 12px;
-        font-size: 12px;
+        font-size: 0.92rem;
       }
 
       .ins-stats dt {
@@ -743,7 +1229,7 @@
       }
       .ins-actions button {
         width: 100%;
-        font-size: 12px;
+        font-size: 0.92rem;
         padding: 6px 10px;
       }
 
@@ -758,7 +1244,7 @@
       .ins-links .link-connect {
         width: 100%;
         padding: 6px 10px;
-        font-size: 12px;
+        font-size: 0.92rem;
       }
 
       .ins-links .link-moves {
@@ -777,13 +1263,13 @@
 
       .ins-links .link-name {
         color: #b9d4ff;
-        font-size: 11px;
+        font-size: 0.85rem;
       }
 
       .ins-links .link-move {
         width: 100%;
         padding: 5px 8px;
-        font-size: 11px;
+        font-size: 0.85rem;
         text-align: left;
       }
 
@@ -808,7 +1294,7 @@
         border: 0;
         background: none;
         border-radius: 999px;
-        font-size: 12px;
+        font-size: 0.92rem;
         font-weight: 600;
         color: var(--text);
         line-height: 1.2;
@@ -838,7 +1324,7 @@
         border: 1px solid rgba(200, 162, 255, 0.35);
         border-radius: 6px;
         color: #d9c2ff;
-        font-size: 11px;
+        font-size: 0.85rem;
         line-height: 1.35;
       }
 
@@ -850,8 +1336,7 @@
 
       .spec-title {
         color: var(--muted);
-        font-size: 10px;
-        text-transform: uppercase;
+        font-size: 0.77rem;
         letter-spacing: 0.06em;
       }
 
@@ -870,14 +1355,14 @@
       }
 
       .spec-name {
-        font-size: 12px;
+        font-size: 0.92rem;
         font-weight: 650;
         color: #e6d8ff;
       }
 
       .spec-blurb {
         color: var(--muted);
-        font-size: 11px;
+        font-size: 0.85rem;
         font-weight: 400;
         line-height: 1.3;
         white-space: normal;
@@ -943,7 +1428,7 @@
         color: var(--text);
         cursor: pointer;
         font: inherit;
-        font-size: 9px;
+        font-size: 0.69rem;
         line-height: 1.15;
         white-space: nowrap;
       }
@@ -967,7 +1452,7 @@
         border-radius: 3px;
         background: #0e131a;
         color: var(--muted);
-        font-size: 7px;
+        font-size: 0.54rem;
         font-weight: 700;
       }
 
@@ -986,7 +1471,7 @@
         justify-self: end;
         padding: 0 2px;
         border-radius: 2px;
-        font-size: 7px;
+        font-size: 0.54rem;
         font-weight: 700;
         letter-spacing: 0.04em;
         line-height: 9px;
@@ -1067,7 +1552,7 @@
       }
 
       .tp-title {
-        font-size: 13px;
+        font-size: 1rem;
         font-weight: 650;
         color: #d6efff;
       }
@@ -1079,7 +1564,7 @@
         border-color: transparent;
         background: none;
         color: var(--muted);
-        font-size: 15px;
+        font-size: 1.15rem;
         line-height: 1;
       }
 
@@ -1091,7 +1576,7 @@
       .tp-hint {
         margin: 0 0 8px;
         color: var(--muted);
-        font-size: 11px;
+        font-size: 0.85rem;
         line-height: 1.35;
       }
 
@@ -1125,7 +1610,7 @@
         border-color: transparent;
         background: none;
         color: var(--muted);
-        font-size: 15px;
+        font-size: 1.15rem;
         line-height: 1;
       }
 
@@ -1143,15 +1628,14 @@
 
       .skills-currency {
         color: var(--amber);
-        font-size: 16px;
+        font-size: 1.23rem;
         font-weight: 700;
         font-variant-numeric: tabular-nums;
       }
 
       .skills-currency-label {
         color: var(--muted);
-        font-size: 10px;
-        text-transform: uppercase;
+        font-size: 0.77rem;
         letter-spacing: 0.08em;
       }
 
@@ -1159,6 +1643,71 @@
         display: grid;
         gap: 6px;
         margin-top: 8px;
+      }
+
+      /*
+        Branch legend. Four one-line entries saying what each colour is for,
+        so the tree reads as four strategies rather than eighteen unexplained
+        cards.
+      */
+      #skills-branches {
+        display: grid;
+        gap: 3px;
+        margin-top: 8px;
+        padding: 7px 9px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+
+      .skill-legend {
+        display: grid;
+        grid-template-columns: 8px 1fr;
+        align-items: baseline;
+        gap: 2px 7px;
+        font-size: 0.69rem;
+        line-height: 1.35;
+      }
+
+      .skill-legend .swatch {
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+        background: var(--branch, #fff);
+      }
+
+      .skill-legend .lname {
+        font-weight: 650;
+      }
+
+      .skill-legend .lblurb {
+        grid-column: 2;
+        color: var(--muted);
+      }
+
+      /*
+        The numbers. Derived from the node's own `effects` on every render, so
+        the panel cannot advertise a buff the simulation does not apply.
+      */
+      .skill-effect {
+        grid-column: 1 / -1;
+        color: var(--cyan);
+        font-size: 0.69rem;
+        line-height: 1.35;
+      }
+
+      .skill-total {
+        grid-column: 1 / -1;
+        color: var(--muted);
+        font-size: 0.69rem;
+        line-height: 1.35;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .skill-rank {
+        color: var(--muted);
+        font-size: 0.69rem;
+        font-variant-numeric: tabular-nums;
       }
 
       .skill-node {
@@ -1185,7 +1734,7 @@
       }
 
       .skill-name {
-        font-size: 12px;
+        font-size: 0.92rem;
         font-weight: 650;
         display: flex;
         align-items: baseline;
@@ -1194,8 +1743,7 @@
       }
 
       .skill-branch {
-        font-size: 9px;
-        text-transform: uppercase;
+        font-size: 0.69rem;
         letter-spacing: 0.06em;
         color: var(--muted);
       }
@@ -1220,7 +1768,7 @@
       .skill-desc {
         grid-column: 1 / -1;
         color: var(--muted);
-        font-size: 10px;
+        font-size: 0.77rem;
         line-height: 1.35;
       }
 
@@ -1228,7 +1776,7 @@
         grid-column: 1 / -1;
         justify-self: end;
         padding: 3px 10px;
-        font-size: 10px;
+        font-size: 0.77rem;
         font-weight: 650;
         font-variant-numeric: tabular-nums;
       }
@@ -1252,8 +1800,7 @@
       .tp-label {
         margin-bottom: 4px;
         color: var(--muted);
-        font-size: 10px;
-        text-transform: uppercase;
+        font-size: 0.77rem;
         letter-spacing: 0.06em;
       }
 
@@ -1266,7 +1813,7 @@
       .tp-levels button {
         padding: 3px 0;
         border-radius: 4px;
-        font-size: 10px;
+        font-size: 0.77rem;
         font-weight: 650;
         font-variant-numeric: tabular-nums;
       }
@@ -1279,7 +1826,7 @@
 
       .tp-map {
         padding: 4px 8px;
-        font-size: 11px;
+        font-size: 0.85rem;
         text-align: left;
       }
 
@@ -1306,7 +1853,7 @@
         border-color: transparent;
         background: none;
         color: var(--muted);
-        font-size: 15px;
+        font-size: 1.15rem;
         line-height: 1;
       }
 
@@ -1327,13 +1874,13 @@
         gap: 7px;
         width: 100%;
         padding: 5px 8px;
-        font-size: 11px;
+        font-size: 0.85rem;
         text-align: left;
       }
 
       .map-row .mr-mark {
         color: var(--muted);
-        font-size: 10px;
+        font-size: 0.77rem;
       }
 
       .map-row.open .mr-mark {
@@ -1348,7 +1895,7 @@
 
       .map-row .mr-why {
         color: #d9b06a;
-        font-size: 10px;
+        font-size: 0.77rem;
       }
 
       .map-row .mr-best {
@@ -1393,20 +1940,19 @@
 
       #next-level .nl-label {
         color: var(--green);
-        font-size: 10px;
+        font-size: 0.77rem;
         font-weight: 650;
-        text-transform: uppercase;
         letter-spacing: 0.08em;
       }
 
       #next-level .nl-name {
-        font-size: 13px;
+        font-size: 1rem;
         font-weight: 650;
       }
 
       #next-level .nl-hint {
         color: var(--muted);
-        font-size: 10px;
+        font-size: 0.77rem;
       }
 
       @keyframes next-level-in {
@@ -1452,19 +1998,19 @@
 
       .ng-panel h2 {
         margin: 0;
-        font-size: 17px;
+        font-size: 1.31rem;
       }
 
       .ng-sub {
         margin: 0;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 0.92rem;
         line-height: 1.45;
       }
 
       #name-input {
         padding: 7px 10px;
-        font-size: 14px;
+        font-size: 1.08rem;
         font-family: inherit;
         color: var(--text);
         background: rgba(9, 12, 17, 0.9);
@@ -1485,8 +2031,7 @@
 
       .ng-label {
         color: var(--muted);
-        font-size: 10px;
-        text-transform: uppercase;
+        font-size: 0.77rem;
         letter-spacing: 0.06em;
       }
 
@@ -1529,7 +2074,7 @@
 
       .go-panel h2 {
         margin: 0 0 4px;
-        font-size: 20px;
+        font-size: 1.54rem;
         color: var(--red);
       }
 
@@ -1585,7 +2130,7 @@
       .fatal-panel h2 {
         margin: 0 0 10px;
         color: var(--red);
-        font-size: 18px;
+        font-size: 1.38rem;
       }
 
       .fatal-panel code {
@@ -1593,7 +2138,7 @@
         padding: 2px 6px;
         border-radius: 4px;
         color: var(--amber);
-        font-size: 12px;
+        font-size: 0.92rem;
       }
 
       .fatal-panel pre {
@@ -1616,13 +2161,13 @@
 
       .fatal-hint {
         color: var(--muted);
-        font-size: 12px;
+        font-size: 0.92rem;
       }
 
       .fatal-detail {
         margin-top: 12px;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 0.92rem;
         word-break: break-word;
       }
 
@@ -1655,7 +2200,7 @@
         Keep the header to a single row on narrower windows by dropping the two
         least urgent readouts rather than letting it wrap and eat map height.
       */
-      @media (max-width: 1180px) {
+      @media (max-width: 1220px) {
         .stat-optional {
           display: none;
         }
@@ -1687,6 +2232,61 @@
 
       @media (max-width: 1500px) {
         .volume .dlabel {
+          display: none;
+        }
+      }
+
+      @media (max-width: 1400px) {
+        /* The sliders are the widest low-priority controls; drop them whole. */
+        .volume {
+          display: none;
+        }
+      }
+
+      @media (max-width: 1240px) {
+        /* Next: the difficulty readout sheds its words, then the slider. */
+        #difficulty .dlabel {
+          display: none;
+        }
+      }
+
+      @media (max-width: 1120px) {
+        #difficulty {
+          display: none;
+        }
+      }
+
+      @media (max-width: 1060px) {
+        /* Below this the theme picker moves to the overflow scroll. */
+        #theme-select {
+          max-width: 84px;
+        }
+      }
+
+      @media (max-width: 980px) {
+        /* Last shed before the bar scrolls: the optional stat readouts. */
+        .stat-optional {
+          display: none;
+        }
+      }
+
+      @media (max-width: 880px) {
+        /* The status block goes; the phase countdown is on the board anyway. */
+        #status {
+          display: none;
+        }
+      }
+
+      @media (max-width: 1040px) {
+        /*
+          Below this the stats strip itself is the overflow; collapse it.
+
+          Everything left in the bar is fixed-width by then, so the strip is
+          the only thing that can still give. Measured: without this, every
+          theme scrolled horizontally across the whole 920-1040 band -- the
+          strip is ~130px, so it has to go before the bar runs out, not after.
+        */
+        .stats {
           display: none;
         }
       }
@@ -1731,19 +2331,37 @@
         </div>
 
         <div class="controls">
-          <button type="button" id="btn-early">Call wave</button>
-          <button type="button" id="btn-pause">Pause</button>
+          <button type="button" id="btn-early" title="Call the next wave early for a coin bonus" aria-label="Call the next wave early">n$xt wave</button>
+          <button type="button" id="btn-pause" class="icon-btn" title="Pause or resume the run (Space)" aria-label="Pause or resume the run">
+            <svg class="control-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+          </button>
           <div id="speeds"></div>
-          <button type="button" id="btn-save" title="Save this run">Save</button>
-          <button type="button" id="btn-load" title="No saved run" disabled>Load</button>
-          <button type="button" id="btn-restart-run" title="Restart this level (R)">Restart</button>
-          <button type="button" id="btn-maps" title="Choose a map">Maps</button>
+          <!-- Familiar monochrome symbols keep these compact controls scannable. -->
+          <button type="button" id="btn-save" class="icon-btn" title="Save this run" aria-label="Save this run">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 16h8v4H8z"/></svg>
+          </button>
+          <button type="button" id="btn-load" class="icon-btn" title="No saved run" aria-label="Load the saved run" disabled>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h6l2 2h8v10H4zM12 14V5M9 8l3-3 3 3"/></svg>
+          </button>
+          <button type="button" id="btn-restart-run" class="icon-btn" title="Restart this level (R)" aria-label="Restart this level">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8V4l-3 3a8 8 0 1 0 2 8"/></svg>
+          </button>
+          <button type="button" id="btn-maps" class="icon-btn" title="Choose a map" aria-label="Choose a map">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 5 5-2 6 2 5-2v16l-5 2-6-2-5 2zM9 3v16M15 5v16"/></svg>
+          </button>
           <button type="button" id="btn-player" title="Switch character">
             <span id="player-name">—</span>
           </button>
-          <button type="button" id="btn-test" title="Sandbox: build at any level for free">Test</button>
-          <button type="button" id="btn-skills" title="Persistent upgrades earned across runs">Skills</button>
-          <button type="button" id="btn-fullscreen" title="Toggle fullscreen">Full</button>
+          <button type="button" id="btn-test" class="icon-btn" title="Sandbox: build at any level for free" aria-label="Toggle test mode">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6M11 4v6l-5 9h12l-5-9V4M8 15h8"/></svg>
+          </button>
+          <button type="button" id="btn-skills" class="icon-btn" title="Persistent upgrades earned across runs" aria-label="Open skills">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16M7 7l10 10M17 7 7 17"/></svg>
+          </button>
+          <button type="button" id="btn-fullscreen" class="icon-btn" title="Toggle fullscreen" aria-label="Toggle fullscreen">
+            <svg class="ico-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>
+            <svg class="ico-collapse" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg>
+          </button>
           <select id="theme-select" title="Colour theme" aria-label="Colour theme"></select>
           <label id="difficulty" title="Harder settings boost wave size, enemy power and how fast the curves ramp">
             <span class="dlabel">Difficulty</span>
@@ -1869,6 +2487,7 @@
               <span class="skills-currency-label">Cores</span>
             </div>
             <p class="tp-hint" id="skills-hint"></p>
+            <div id="skills-branches"></div>
             <div id="skills-list"></div>
           </aside>
 

@@ -12,7 +12,8 @@ export class Input {
    * @param {import('../render/stage.js').Stage} stage
    * @param {object} handlers
    *  onHover(tile) onPrimary(tile) onCancel() onHotkey(key)
-   *  onUpgrade() onSell() onCycleTargeting() onTogglePause() onSpeed(delta) onRestart()
+  *  onUpgrade() onSell() onCycleTargeting() onTogglePause() onSpeed(delta) onRestart()
+  *  onCallEarly()
    */
   constructor(stage, handlers) {
     this.stage = stage;
@@ -115,7 +116,12 @@ export class Input {
 
   _bindKeys() {
     window.addEventListener('keydown', (event) => {
-      if (event.target instanceof HTMLInputElement) return;
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement ||
+        event.target instanceof HTMLSelectElement ||
+        event.target instanceof HTMLElement && event.target.isContentEditable
+      ) return;
 
       const key = event.key;
 
@@ -129,6 +135,11 @@ export class Input {
       if (key === 'p' || key === 'P') {
         event.preventDefault();
         this.handlers.onTogglePause();
+        return;
+      }
+      if (key === 'n' || key === 'N') {
+        event.preventDefault();
+        this.handlers.onCallEarly();
         return;
       }
       if (key === 'Escape') {

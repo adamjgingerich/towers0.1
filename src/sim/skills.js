@@ -60,6 +60,7 @@ export function buildSkills(raw) {
       key: String(b.key),
       name: String(b.name ?? b.key),
       color: String(b.color ?? '#ffffff'),
+      blurb: String(b.blurb ?? ''),
     }));
 
   const nodes = (Array.isArray(raw?.nodes) ? raw.nodes : [])
