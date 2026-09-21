@@ -298,6 +298,7 @@ export class World {
       // Resolved once, here, rather than per hit: the wave an enemy was born on
       // is fixed, and this sits on the damage hot path.
       armorBonus: this.waves.armorBonus(this.wave),
+      ccResistBonus: this.waves.ccResistBonus(this.wave),
     });
     this._nextEid += 1;
     this.enemies.push(enemy);
@@ -445,6 +446,13 @@ export class World {
       const def = this.config.towers[key];
       this.note(`${def.name} unlocked — dropped by the boss`);
       this.addText(Fx.text(this.grid.base[0] + 1, this.grid.base[1] + 1, `${def.name}!`, '#ffd166', 2.0));
+      /*
+        Announced outward so the shell can persist it against the player. The
+        simulation must not know what storage is, so this is a hook the caller
+        installs, not an import -- and it is optional, which keeps every probe
+        and headless test working without one.
+      */
+      if (this.onWeaponDropped) this.onWeaponDropped(key);
       return key;
     }
     return null;

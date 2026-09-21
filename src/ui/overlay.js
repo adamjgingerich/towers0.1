@@ -15,7 +15,8 @@
 import { CLEARING, OVER, PREP, SPAWNING } from '../sim/wave_manager.js';
 import { BARRACKS_KEY } from '../sim/barracks.js';
 import { TARGETING_LABELS } from '../sim/tower.js';
-import { UNLOCK_WAVE, mapUnlocked } from '../storage.js';
+import { skillCost } from '../sim/skills.js';
+import { UNLOCK_WAVE, mapUnlocked, unlockedCount } from '../storage.js';
 import { THEMES } from '../themes.js';
 
 const SPEEDS = [0.25, 0.5, 1, 2, 3, 4, 5];
@@ -107,6 +108,24 @@ function skillTotalText(node) {
   return parts.join(' · ');
 }
 
+/** How many entries a per-map global score list keeps. */
+const LEADERBOARD_SIZE = 5;
+
+/**
+ * Every character's best wave on one map, ranked.
+ *
+ * The roster is already the union of this browser's characters and anything a
+ * shared store has synced in, so this is "global" by construction: with a
+ * shared store configured, the same list includes players from other machines.
+ */
+function mapLeaderboard(players, mapId) {
+  return Object.values(players ?? {})
+    .map((p) => ({ name: p.name, wave: p.best?.[mapId] ?? 0 }))
+    .filter((e) => e.wave > 0)
+    .sort((a, b) => b.wave - a.wave || a.name.localeCompare(b.name))
+    .slice(0, LEADERBOARD_SIZE);
+}
+
 export class Overlay {
   /**
    * @param {object} callbacks
@@ -175,13 +194,13 @@ export class Overlay {
       nameGo: $('btn-name-go'),
       nameExisting: $('name-existing'),
       nameExistingLabel: $('name-existing-label'),
+      nameRosterNote: $('name-roster-note'),
       weatherBadge: $('weather-badge'),
       weatherName: $('weather-name'),
       weatherEffects: $('weather-effects'),
       btnSkills: $('btn-skills'),
       skillsPanel: $('skills-panel'),
       skillsList: $('skills-list'),
-      skillsBranches: $('skills-branches'),
       skillsCores: $('skills-cores'),
       skillsHint: $('skills-hint'),
       btnSkillsClose: $('btn-skills-close'),
@@ -603,6 +622,22 @@ export class Overlay {
    * The list is rebuilt rather than patched because a purchase can flip any
    * node between locked, affordable and maxed at once, and diffing that by hand
    * is where stale-node bugs live.
+   *
+   * ## Shape of the panel
+   *
+   * Nodes are grouped under a header per branch rather than listed flat. The
+   * flat list was the main thing wrong with this screen: four different
+   * strategies were interleaved in data order, so the structure -- and the fact
+   * that some nodes gate others -- was invisible. Each header carries the
+   * branch colour, what the branch is for, and how far into it the player
+   * already is.
+   *
+   * The buy control is the other fix. It used to read `Buy ◆ 5`, which named
+   * neither the currency nor the rank, and bought exactly one rank per click;
+   * a five-rank node with a cost that grows each time was five blind clicks.
+   * It now states the cost in Cores and the rank it buys, and when the wallet
+   * covers more than one rank it offers the whole run of them in a second
+   * button, because that is the purchase the player actually means.
    */
   _updateSkills(skills) {
     const panel = this.el.skillsPanel;
@@ -619,117 +654,182 @@ export class Overlay {
 
     this._set(this.el.skillsCores, String(skills?.cores ?? 0));
     this._set(this.el.skillsHint, skills?.hasName
-      ? 'Cores arrive on their own -- at least one for every wave you survive, more on '
-        + 'harder difficulties and deeper waves. Nothing is spent for you: you choose the '
-        + 'branch and the node. A purchase takes effect from the next run.'
+      ? 'Cores drop every third wave you survive — more on harder difficulties and '
+        + 'deeper waves. Nothing is spent for you: pick a branch, pick a node. '
+        + 'A purchase takes effect from the next run.'
       : 'Choose a character first — the tree belongs to a character.');
 
-    this._renderBranchLegend(branches);
-
+    /*
+      No separate legend any more: each branch now renders as its own section
+      carrying the colour, the name and what the branch is for, so a legend on
+      top of that was the same information twice.
+    */
     const list = this.el.skillsList;
     list.innerHTML = '';
 
-    for (const node of nodes) {
-      const branch = branches.find((b) => b.key === node.branch);
-      const color = branch?.color ?? '#ffffff';
-      const maxed = node.rank >= node.maxRank;
+    for (const branch of branches) {
+      const branchNodes = nodes.filter((n) => n.branch === branch.key);
+      if (branchNodes.length === 0) continue;
 
-      const row = document.createElement('div');
-      row.className = 'skill-node';
-      row.style.setProperty('--branch', color);
-      if (!node.unlocked && !maxed) row.classList.add('locked');
-      if (maxed) row.classList.add('maxed');
+      const spent = branchNodes.reduce((sum, n) => sum + n.rank, 0);
+      const total = branchNodes.reduce((sum, n) => sum + n.maxRank, 0);
 
-      const name = document.createElement('div');
-      name.className = 'skill-name';
-      const label = document.createElement('span');
-      label.textContent = node.name;
-      const tag = document.createElement('span');
-      tag.className = 'skill-branch';
-      tag.textContent = branch?.name ?? '';
-      name.append(label, tag);
-      row.appendChild(name);
+      const section = document.createElement('section');
+      section.className = 'skill-group';
+      section.style.setProperty('--branch', branch.color ?? '#ffffff');
 
-      const rankTag = document.createElement('span');
-      rankTag.className = 'skill-rank';
-      rankTag.textContent = `${node.rank} / ${node.maxRank}`;
-      row.appendChild(rankTag);
+      const head = document.createElement('div');
+      head.className = 'skill-group-head';
+      const dot = document.createElement('span');
+      dot.className = 'swatch';
+      const title = document.createElement('span');
+      title.className = 'sgh-name';
+      title.textContent = branch.name ?? '';
+      const progress = document.createElement('span');
+      progress.className = 'sgh-progress';
+      progress.textContent = `${spent} / ${total}`;
+      progress.title = `${spent} of ${total} ranks bought in this branch`;
+      head.append(dot, title, progress);
+      section.appendChild(head);
 
-      const pips = document.createElement('span');
-      pips.className = 'skill-pips';
-      for (let i = 0; i < node.maxRank; i += 1) {
-        const pip = document.createElement('span');
-        pip.className = 'skill-pip';
-        if (i < node.rank) pip.classList.add('on');
-        pips.appendChild(pip);
+      if (branch.blurb) {
+        const blurb = document.createElement('p');
+        blurb.className = 'skill-group-blurb';
+        blurb.textContent = branch.blurb;
+        section.appendChild(blurb);
       }
-      row.appendChild(pips);
 
-      const desc = document.createElement('div');
-      desc.className = 'skill-desc';
-      desc.textContent = node.desc;
-      row.appendChild(desc);
-
-      const effect = document.createElement('div');
-      effect.className = 'skill-effect';
-      effect.textContent = skillEffectText(node);
-      row.appendChild(effect);
-
-      const total = document.createElement('div');
-      total.className = 'skill-total';
-      total.textContent = skillTotalText(node);
-      row.appendChild(total);
-
-      const buy = document.createElement('button');
-      buy.type = 'button';
-      buy.className = 'skill-buy';
-      if (maxed) {
-        buy.textContent = 'Maxed';
-        buy.disabled = true;
-      } else if (!node.unlocked) {
-        const missing = node.requires
-          .filter((id) => (byId.get(id)?.rank ?? 0) < 1)
-          .map((id) => byId.get(id)?.name ?? id);
-        buy.textContent = 'Locked';
-        buy.disabled = true;
-        buy.title = missing.length > 0
-          ? `Needs a rank of: ${missing.join(', ')}`
-          : 'Locked';
-        desc.textContent = missing.length > 0
-          ? `${node.desc} Needs: ${missing.join(', ')}.`
-          : node.desc;
-      } else {
-        buy.textContent = `Buy \u25C6 ${node.nextCost}`;
-        buy.title = `Spend ${node.nextCost} Cores on rank ${node.rank + 1} of ${node.maxRank}`;
-        buy.disabled = (skills?.cores ?? 0) < node.nextCost;
-        buy.addEventListener('click', () => this.cb.onBuySkill(node.id));
+      for (const node of branchNodes) {
+        section.appendChild(this._renderSkillNode(node, byId, skills));
       }
-      row.appendChild(buy);
 
-      list.appendChild(row);
+      list.appendChild(section);
     }
   }
 
-  /** One legend row per branch: colour, name, and what the branch is for. */
-  _renderBranchLegend(branches) {
-    const box = this.el.skillsBranches;
-    if (!box) return;
-    box.innerHTML = '';
-    for (const branch of branches) {
-      const row = document.createElement('div');
-      row.className = 'skill-legend';
-      row.style.setProperty('--branch', branch.color);
-      const swatch = document.createElement('span');
-      swatch.className = 'swatch';
-      const name = document.createElement('span');
-      name.className = 'lname';
-      name.textContent = branch.name;
-      const blurb = document.createElement('span');
-      blurb.className = 'lblurb';
-      blurb.textContent = branch.blurb ?? '';
-      row.append(swatch, name, blurb);
-      box.appendChild(row);
+  /** One node card: name, rank, what the next rank gives, and the buy controls. */
+  _renderSkillNode(node, byId, skills) {
+    const maxed = node.rank >= node.maxRank;
+
+    const row = document.createElement('div');
+    row.className = 'skill-node';
+    if (!node.unlocked && !maxed) row.classList.add('locked');
+    if (maxed) row.classList.add('maxed');
+
+    const name = document.createElement('div');
+    name.className = 'skill-name';
+    const label = document.createElement('span');
+    label.textContent = node.name;
+    name.appendChild(label);
+    row.appendChild(name);
+
+    const rankTag = document.createElement('span');
+    rankTag.className = 'skill-rank';
+    rankTag.textContent = `${node.rank} / ${node.maxRank}`;
+    row.appendChild(rankTag);
+
+    const pips = document.createElement('span');
+    pips.className = 'skill-pips';
+    for (let i = 0; i < node.maxRank; i += 1) {
+      const pip = document.createElement('span');
+      pip.className = 'skill-pip';
+      if (i < node.rank) pip.classList.add('on');
+      pips.appendChild(pip);
     }
+    row.appendChild(pips);
+
+    const desc = document.createElement('div');
+    desc.className = 'skill-desc';
+    desc.textContent = node.desc;
+    row.appendChild(desc);
+
+    // Requirements are a chip of their own rather than a sentence bolted onto
+    // the flavour text, which is where they used to hide.
+    if (!node.unlocked && !maxed) {
+      const missing = node.requires
+        .filter((id) => (byId.get(id)?.rank ?? 0) < 1)
+        .map((id) => byId.get(id)?.name ?? id);
+      if (missing.length > 0) {
+        const gate = document.createElement('div');
+        gate.className = 'skill-gate';
+        gate.textContent = `Needs ${missing.join(' + ')}`;
+        row.appendChild(gate);
+      }
+    }
+
+    const effect = document.createElement('div');
+    effect.className = 'skill-effect';
+    effect.textContent = skillEffectText(node);
+    row.appendChild(effect);
+
+    const total = document.createElement('div');
+    total.className = 'skill-total';
+    total.textContent = skillTotalText(node);
+    row.appendChild(total);
+
+    row.appendChild(this._buildBuyControls(node, maxed, skills));
+    return row;
+  }
+
+  /** The buy buttons: one rank, plus "buy the rest of what you can afford". */
+  _buildBuyControls(node, maxed, skills) {
+    const wrap = document.createElement('div');
+    wrap.className = 'skill-buy-row';
+
+    if (maxed) {
+      const done = document.createElement('span');
+      done.className = 'skill-maxed';
+      done.textContent = 'Maxed';
+      wrap.appendChild(done);
+      return wrap;
+    }
+
+    if (!node.unlocked) {
+      const locked = document.createElement('span');
+      locked.className = 'skill-locked';
+      locked.textContent = 'Locked';
+      wrap.appendChild(locked);
+      return wrap;
+    }
+
+    /*
+      How many ranks the wallet actually covers, walking the same growing cost
+      the purchase will. Bought in one go because that is what the player means
+      when they can afford three of five.
+    */
+    const cores = skills?.cores ?? 0;
+    let purse = cores;
+    let affordable = 0;
+    while (affordable < node.maxRank - node.rank) {
+      const step = skillCost(node, node.rank + affordable);
+      if (purse < step) break;
+      purse -= step;
+      affordable += 1;
+    }
+
+    const buy = document.createElement('button');
+    buy.type = 'button';
+    buy.className = 'skill-buy';
+    buy.disabled = affordable < 1;
+    buy.textContent = affordable < 1
+      ? `${node.nextCost} Cores`
+      : `Buy \u2014 ${node.nextCost} Cores`;
+    buy.title = `Rank ${node.rank + 1} of ${node.maxRank} · costs ${node.nextCost} Cores`;
+    buy.addEventListener('click', () => this.cb.onBuySkill(node.id, 1));
+    wrap.appendChild(buy);
+
+    if (affordable > 1) {
+      const bulk = document.createElement('button');
+      bulk.type = 'button';
+      bulk.className = 'skill-buy bulk';
+      const spend = cores - purse;
+      bulk.textContent = `Rank up \u00D7${affordable}`;
+      bulk.title = `Buy ${affordable} ranks for ${Math.round(spend)} Cores`;
+      bulk.addEventListener('click', () => this.cb.onBuySkill(node.id, affordable));
+      wrap.appendChild(bulk);
+    }
+
+    return wrap;
   }
 
   /** Name entry. Existing characters are offered rather than retyped. */
@@ -745,29 +845,89 @@ export class Overlay {
   }
 
   /**
-   * Offer every character already on this machine.
+   * Offer every character on this browser, with what each of them has earned.
+   *
+   * A bare list of names was not enough once characters started accumulating:
+   * two names side by side with no numbers on them give the player no way to
+   * tell which one has the skill tree they spent an evening on. The row carries
+   * the three things a character actually owns -- maps opened, Cores banked, and
+   * secret weapons found -- so picking one is an informed choice.
    *
    * Rebuilt only when the gate opens, because the set of names changes rarely
    * and this is the one screen where a stale list would be actively confusing.
    */
   _showNameGate(progress) {
-    const names = Object.keys(progress.players ?? {}).sort();
+    const roster = progress.roster ?? [];
     const container = this.el.nameExisting;
     container.innerHTML = '';
-    this.el.nameExistingLabel.hidden = names.length === 0;
+    this.el.nameExistingLabel.hidden = roster.length === 0;
 
-    for (const name of names) {
+    const levels = progress.levels ?? [];
+    for (const player of roster) {
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = name;
-      button.addEventListener('click', () => this.cb.onSetName(name));
+      button.className = 'ng-player';
+      if (player.active) button.classList.add('active');
+
+      const top = document.createElement('span');
+      top.className = 'ngp-top';
+      const name = document.createElement('span');
+      name.className = 'ngp-name';
+      name.textContent = player.name;
+      top.appendChild(name);
+
+      const maps = unlockedCount(levels, player.best ?? {});
+      const stats = document.createElement('span');
+      stats.className = 'ngp-stats';
+      const parts = [`${maps}/${levels.length || 1} maps`];
+      if (player.cores > 0) parts.push(`${player.cores} core${player.cores === 1 ? '' : 's'}`);
+      const guns = (player.weapons ?? []).length;
+      if (guns > 0) parts.push(`${guns} weapon${guns === 1 ? '' : 's'}`);
+      stats.textContent = parts.join(' · ');
+      top.appendChild(stats);
+      button.appendChild(top);
+
+      const best = Math.max(0, ...Object.values(player.best ?? {}));
+      const sub = document.createElement('span');
+      sub.className = 'ngp-sub';
+      sub.textContent = best > 0 ? `furthest wave ${best}` : 'not started';
+      button.appendChild(sub);
+
+      button.addEventListener('click', () => this.cb.onSetName(player.name));
       container.appendChild(button);
     }
 
-    if (names.length > 0 && !this.el.nameInput.value) {
-      this.el.nameInput.value = names[0] === 'Default' ? '' : names[0];
+    if (roster.length > 0 && !this.el.nameInput.value) {
+      const first = roster.find((p) => !p.active) ?? roster[0];
+      this.el.nameInput.value = first.name === 'Default' ? '' : first.name;
+    }
+
+    /*
+      Say plainly whether the roster is shared. Without this, a local-only build
+      and a shared build whose request failed look identical -- both just show
+      the characters on this machine -- and the player has no way to tell that
+      nothing is wrong with their account.
+    */
+    const note = this.el.nameRosterNote;
+    if (note) {
+      if (!progress.shared) {
+        note.hidden = false;
+        note.textContent = 'Saved in this browser only.';
+      } else if (progress.sharedOnline) {
+        note.hidden = false;
+        note.textContent = 'Shared — these characters are visible to everyone.';
+      } else {
+        note.hidden = false;
+        note.textContent = 'Shared roster unreachable; playing from this browser.';
+      }
     }
     this.el.nameInput.focus();
+  }
+
+  /** Redraw the roster if the gate is showing, after a background sync. */
+  refreshRoster() {
+    this._gateSig = null;
+    this._rosterDirty = true;
   }
 
   _updatePlayer(progress) {
@@ -783,20 +943,32 @@ export class Overlay {
       gate.hidden = !needName;
       // Built on open, never per frame: rebuilding the list would steal focus
       // and wipe whatever the player has already typed.
-      if (needName) this._showNameGate(progress);
+      if (needName) {
+        this._showNameGate(progress);
+        this._rosterDirty = false;
+      }
+    } else if (needName && this._rosterDirty) {
+      // A background sync landed while the gate is open, so redraw it in place.
+      this._rosterDirty = false;
+      this._showNameGate(progress);
     }
   }
 
   _updateMaps(progress) {
     const levels = progress.levels ?? [];
     const best = progress.playerBest ?? {};
+    const players = progress.players ?? {};
     const inTest = Boolean(progress.testMode);
 
     // Signature covers everything a row draws, so the list is rebuilt only when
-    // something it displays actually changes.
+    // something it displays actually changes -- including the global boards,
+    // which move whenever any character on the roster beats a wave here.
     const sig = levels
       .map((level) => `${level.id}:${best[level.id] ?? 0}:${mapUnlocked(levels, best, levels.indexOf(level)) ? 1 : 0}`)
-      .join('|') + `#${progress.activeMap}#${inTest ? 1 : 0}`;
+      .join('|') + `#${progress.activeMap}#${inTest ? 1 : 0}#`
+      + levels
+        .map((level) => `${level.id}:${mapLeaderboard(players, level.id).map((e) => `${e.name}:${e.wave}`).join(',')}`)
+        .join('|');
 
     if (sig !== this._mapSig) {
       this._mapSig = sig;
@@ -808,6 +980,9 @@ export class Overlay {
         const open = mapUnlocked(levels, best, i);
         const wave = best[level.id] ?? 0;
         const cleared = wave >= UNLOCK_WAVE;
+
+        const entry = document.createElement('div');
+        entry.className = 'map-entry';
 
         const row = document.createElement('button');
         row.type = 'button';
@@ -842,7 +1017,37 @@ export class Overlay {
 
         row.append(mark, name, score);
         if (open) row.addEventListener('click', () => this.cb.onSelectMap(level.id));
-        this.el.mapList.appendChild(row);
+        entry.appendChild(row);
+
+        // The global board for this map: every character's best, ranked.
+        const board = mapLeaderboard(players, level.id);
+        if (board.length > 0) {
+          const head = document.createElement('div');
+          head.className = 'ms-head';
+          head.textContent = 'Top scores';
+          entry.appendChild(head);
+
+          const list = document.createElement('ol');
+          list.className = 'map-scores';
+          board.forEach((e, rank) => {
+            const li = document.createElement('li');
+            if (rank === 0) li.classList.add('rank-1');
+            if (e.name === progress.name) li.classList.add('you');
+
+            const who = document.createElement('span');
+            who.className = 'ms-name';
+            who.textContent = e.name;
+            const at = document.createElement('span');
+            at.className = 'ms-wave';
+            at.textContent = String(e.wave);
+
+            li.append(who, at);
+            list.appendChild(li);
+          });
+          entry.appendChild(list);
+        }
+
+        this.el.mapList.appendChild(entry);
         this.mapRows.set(level.id, row);
       }
     }

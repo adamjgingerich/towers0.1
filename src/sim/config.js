@@ -662,6 +662,12 @@ export function buildConfig(raw) {
       speed_cap: Number(s.speed_cap),
       armor_lin: Number(s.armor_lin ?? 0),
       armor_cap: Number(s.armor_cap ?? Infinity),
+      // Counterweight to crowd control. Must be listed here as well as in
+      // data/waves.json -- this block is an explicit whitelist, so a key that
+      // exists in the data but not here is silently dropped and the feature
+      // reads as broken rather than as unconfigured.
+      cc_resist_lin: Number(s.cc_resist_lin ?? 0),
+      cc_resist_cap: Number(s.cc_resist_cap ?? Infinity),
       bounty_lin: Number(s.bounty_lin),
       bounty_exp: Number(s.bounty_exp),
     },

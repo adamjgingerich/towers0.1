@@ -49,7 +49,49 @@
         "bulwark_v2":  { "row": 29, "frames": 6, "fps": 5 },
         "runner_v2":   { "row": 30, "frames": 6, "fps": 14 },
         "splitter_v2": { "row": 31, "frames": 6, "fps": 5 },
-        "warden_v2":   { "row": 32, "frames": 6, "fps": 10 }
+        "warden_v2":   { "row": 32, "frames": 6, "fps": 10 },
+
+        "_late_game_note": "Rows for the five types added when the roster stopped growing at wave 26. Every type needs all three of its rows: the renderer picks a look from `eid % 3`, and a missing `_v1`/`_v2` row makes that enemy render as nothing at all rather than falling back, so two thirds of the spawns would silently vanish.",
+        "sentinel":    { "row": 33, "frames": 6, "fps": 5 },
+        "sentinel_v1": { "row": 34, "frames": 6, "fps": 5 },
+        "sentinel_v2": { "row": 35, "frames": 6, "fps": 5 },
+
+        "wraith":      { "row": 36, "frames": 6, "fps": 12 },
+        "wraith_v1":   { "row": 37, "frames": 6, "fps": 12 },
+        "wraith_v2":   { "row": 38, "frames": 6, "fps": 12 },
+
+        "hive":        { "row": 39, "frames": 6, "fps": 4 },
+        "hive_v1":     { "row": 40, "frames": 6, "fps": 4 },
+        "hive_v2":     { "row": 41, "frames": 6, "fps": 4 },
+
+        "colossus":    { "row": 42, "frames": 6, "fps": 4 },
+        "colossus_v1": { "row": 43, "frames": 6, "fps": 4 },
+        "colossus_v2": { "row": 44, "frames": 6, "fps": 4 },
+
+        "swarmling":    { "row": 45, "frames": 6, "fps": 16 },
+        "swarmling_v1": { "row": 46, "frames": 6, "fps": 16 },
+        "swarmling_v2": { "row": 47, "frames": 6, "fps": 16 },
+
+        "_second_wave_note": "Rows 48-62 for the second batch. The same three-rows-or-invisible rule applies, and it matters more here than it did for the first batch: the marauder is a leak bomb, so a missing variant row would turn one of its three visual mutants into an invisible enemy that deals 7 damage to the base when it arrives. Animations are paced to the unit's weight -- the behemoth lumbers at 4fps like the colossus it sits beside, the marauder scuttles at 16 like the swarmling.",
+        "husk":        { "row": 48, "frames": 6, "fps": 5 },
+        "husk_v1":     { "row": 49, "frames": 6, "fps": 5 },
+        "husk_v2":     { "row": 50, "frames": 6, "fps": 5 },
+
+        "overseer":    { "row": 51, "frames": 6, "fps": 7 },
+        "overseer_v1": { "row": 52, "frames": 6, "fps": 7 },
+        "overseer_v2": { "row": 53, "frames": 6, "fps": 7 },
+
+        "obsidian":    { "row": 54, "frames": 6, "fps": 10 },
+        "obsidian_v1": { "row": 55, "frames": 6, "fps": 10 },
+        "obsidian_v2": { "row": 56, "frames": 6, "fps": 10 },
+
+        "behemoth":    { "row": 57, "frames": 6, "fps": 4 },
+        "behemoth_v1": { "row": 58, "frames": 6, "fps": 4 },
+        "behemoth_v2": { "row": 59, "frames": 6, "fps": 4 },
+
+        "marauder":    { "row": 60, "frames": 6, "fps": 16 },
+        "marauder_v1": { "row": 61, "frames": 6, "fps": 16 },
+        "marauder_v2": { "row": 62, "frames": 6, "fps": 16 }
       }
     },
 

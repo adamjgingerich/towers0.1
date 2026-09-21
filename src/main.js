@@ -20,18 +20,19 @@ import { World } from './sim/world.js';
 import { readSave, writeSave } from './storage.js';
 import {
   UNLOCK_WAVE,
+  blankPlayer,
   mapUnlocked,
   migrateLegacyBest,
   readActiveName,
-  readMeta,
-  readPlayers,
+  readRoster,
   sanitiseName,
+  savePlayer,
   unlockedCount,
   writeActiveName,
-  writeMeta,
-  writePlayers,
+  writeRoster,
 } from './storage.js';
 import { resolveMeta, skillCost, skillNode, skillUnlocked } from './sim/skills.js';
+import { isShared, mergeRosters, pullRoster, pushPlayer, pushRoster } from './sync.js';
 import { applyTheme, readTheme, writeTheme } from './themes.js';
 import { FloatingText } from './ui/floating-text.js';
 import { Input } from './ui/input.js';
@@ -124,10 +125,10 @@ class Game {
      * name gate is showing and nothing is being recorded yet.
      */
     this.levels = [];
-    this.players = readPlayers();
+    this.roster = readRoster();
     this.playerName = readActiveName();
     /** Skill-tree wallet + owned ranks, and the buffs they resolve to. */
-    this.metaState = readMeta(this.playerName);
+    this.metaState = { cores: 0, nodes: {} };
     this.meta = this.resolveMeta();
     /** Highest wave already written for the current map, so recording is
      *  per-wave rather than per-frame. */
@@ -200,6 +201,19 @@ class Game {
     });
     // Same object every time, so the sandbox settings outlive a restart.
     world.test = this.test;
+    /*
+      Secret weapons are the character's, not the run's. A fresh world starts
+      with an empty unlock set, so the drops this character already earned have
+      to be handed over or a restart would take their guns away.
+    */
+    this.seedWeapons(world);
+    /*
+      A boss drop is recorded against the character the moment it happens rather
+      than when the run ends: a run that is abandoned, reloaded or restarted
+      still earned it, and losing a rare drop to a browser refresh would be the
+      worst bug in this file.
+    */
+    world.onWeaponDropped = (key) => this.recordWeapon(key);
     return world;
   }
 
@@ -256,8 +270,101 @@ class Game {
    * that state, which is what keeps "no character" from silently becoming one.
    */
   player() {
-    if (!this.playerName) return { best: {} };
-    return this.players[this.playerName] ?? { best: {} };
+    if (!this.playerName) return blankPlayer('');
+    return this.roster[this.playerName] ?? blankPlayer(this.playerName);
+  }
+
+  /**
+   * Persist a change to the active character.
+   *
+   * Everything a character owns -- best waves, Cores, skill ranks, secret
+   * weapons -- goes through here, so there is exactly one place that decides how
+   * a record is written and one place to hook a shared store into later.
+   */
+  saveActive(patch) {
+    if (!this.playerName) return;
+    const saved = savePlayer(this.playerName, patch);
+    if (saved) this.roster[this.playerName] = saved;
+    // Fire-and-forget: sharing is a background nicety and the game keeps
+    // playing whether or not it lands.
+    if (saved && isShared()) {
+      pushPlayer(saved).then((ok) => {
+        this.sharedOnline = ok;
+        this._scheduleShareRefresh();
+      });
+    }
+  }
+
+  /**
+   * Pull the shared roster and fold it into this browser's copy.
+   *
+   * Never rejects and never blocks: `pullRoster` resolves to null on any
+   * failure, which is treated as "no news" rather than "nobody exists". A
+   * dropped connection must not be able to empty the character list.
+   */
+  async syncRoster() {
+    if (!isShared()) return false;
+    const rows = await pullRoster();
+    if (rows === null) {
+      this.sharedOnline = false;
+      return false;
+    }
+    const { roster, changed } = mergeRosters(this.roster, rows);
+    this.roster = roster;
+    writeRoster(roster);
+    this.sharedOnline = true;
+    if (this.playerName) {
+      this.loadActiveMeta();
+      this.meta = this.resolveMeta();
+    }
+    // Characters this browser had but the shared store did not are uploaded, so
+    // a player who started offline still appears to everyone else.
+    const missing = Object.values(roster).filter((p) => !rows.some((r) => r.name === p.name));
+    if (missing.length > 0) pushRoster(missing);
+    if (changed.length > 0 && this.overlay) this.overlay.refreshRoster?.();
+    return true;
+  }
+
+  /** Coalesce roster refreshes, so a busy wave does not hammer the overlay. */
+  _scheduleShareRefresh() {
+    if (this._shareTimer) return;
+    this._shareTimer = setTimeout(() => {
+      this._shareTimer = null;
+      if (this.overlay) this.overlay.refreshRoster?.();
+    }, 400);
+  }
+
+  /** Pull the active character's skill tree into the live state. */
+  loadActiveMeta() {
+    const record = this.roster[this.playerName];
+    this.metaState = {
+      cores: Math.max(0, Math.floor(Number(record?.cores) || 0)),
+      nodes: { ...(record?.nodes ?? {}) },
+    };
+  }
+
+  /**
+   * Record that the active character has earned a secret weapon.
+   *
+   * Held on the character rather than in the run save, because the run save is
+   * a single slot: two characters sharing one browser used to share one set of
+   * drops, so a boss kill by either of them unlocked the gun for both.
+   *
+   * @returns {boolean} whether this was a new unlock
+   */
+  recordWeapon(key) {
+    if (!this.playerName || !key) return false;
+    const owned = this.player().weapons ?? [];
+    if (owned.includes(key)) return false;
+    this.saveActive({ weapons: [...owned, key] });
+    return true;
+  }
+
+  /** Hand the active character's earned weapons to a freshly built world. */
+  seedWeapons(world) {
+    for (const key of this.player().weapons ?? []) {
+      if (world.config.towers[key]) world.unlockedTowers.add(key);
+    }
   }
 
   /** Furthest wave survived on a map by the active character. */
@@ -275,11 +382,16 @@ class Game {
     if (!this.playerName || n <= 0) return;
     this.metaState = this.metaState ?? { cores: 0, nodes: {} };
     this.metaState.cores += n;
-    writeMeta(this.playerName, this.metaState);
+    this.saveActive({ cores: this.metaState.cores, nodes: this.metaState.nodes });
   }
 
   /**
-   * Buy one rank of a skill.
+   * Buy one or more ranks of a skill, as far as the wallet allows.
+   *
+   * `count` exists because a five-rank node with a growing cost is a tedious
+   * thing to buy one click at a time, and the buyer already knows how many they
+   * want. Ranks are bought in order and the loop stops at the first one it
+   * cannot afford, so a partial purchase still lands rather than failing whole.
    *
    * Buffs are mostly run-start values (coins, health, capacity, starting
    * level), so a purchase restarts the run rather than silently rewinding a
@@ -287,7 +399,7 @@ class Game {
    *
    * @returns {[boolean, string]} ok, message
    */
-  buySkill(id) {
+  buySkill(id, count = 1) {
     if (!this.playerName) return [false, 'Choose a character first'];
     const node = skillNode(this.config.skills, id);
     if (!node) return [false, 'Unknown skill'];
@@ -297,16 +409,30 @@ class Game {
       return [false, 'Locked — prerequisites missing'];
     }
 
-    const rank = nodes[id] ?? 0;
-    const cost = skillCost(node, rank);
-    if ((this.metaState?.cores ?? 0) < cost) return [false, `Needs ${cost} Cores`];
+    const wanted = Math.max(1, Math.min(Math.floor(count), node.maxRank));
+    let rank = nodes[id] ?? 0;
+    let bought = 0;
 
-    this.metaState.cores -= cost;
-    this.metaState.nodes = { ...nodes, [id]: rank + 1 };
-    writeMeta(this.playerName, this.metaState);
+    while (bought < wanted && rank < node.maxRank) {
+      const cost = skillCost(node, rank);
+      if ((this.metaState?.cores ?? 0) < cost) break;
+      this.metaState.cores -= cost;
+      rank += 1;
+      bought += 1;
+    }
+
+    if (bought === 0) {
+      const cost = skillCost(node, rank);
+      return [false, `Needs ${cost} Cores`];
+    }
+
+    this.metaState.nodes = { ...nodes, [id]: rank };
+    this.saveActive({ cores: this.metaState.cores, nodes: this.metaState.nodes });
     this.meta = this.resolveMeta();
     this.restart();
-    return [true, `${node.name} — rank ${rank + 1}/${node.maxRank}`];
+    return [true, bought > 1
+      ? `${node.name} — ${bought} ranks, now ${rank}/${node.maxRank}`
+      : `${node.name} — rank ${rank}/${node.maxRank}`];
   }
 
   /** Everything the overlay needs to draw the tree. */
@@ -358,11 +484,16 @@ class Game {
       best: this.bestFor(),
       name: this.playerName,
       levels: this.levels,
-      players: this.players,
+      players: this.roster,
+      roster: this.rosterList(),
       playerBest: this.player().best ?? {},
+      weapons: this.player().weapons ?? [],
       activeMap: this.mapId,
       nextMap: this.nextMap(),
       skills: this.skillProgress(),
+      /** Whether a shared store is configured, and whether it answered. */
+      shared: isShared(),
+      sharedOnline: this.sharedOnline === true,
     };
   }
 
@@ -372,16 +503,26 @@ class Game {
    */
   recordBest(wave) {
     if (!this.playerName) return false;
-    const player = this.players[this.playerName]
-      ?? (this.players[this.playerName] = { best: {} });
-    if (!player.best) player.best = {};
-
-    const previous = player.best[this.mapId] ?? 0;
+    const player = this.player();
+    const previous = player.best?.[this.mapId] ?? 0;
     if (wave <= previous) return false;
 
-    player.best[this.mapId] = Math.floor(wave);
-    writePlayers(this.players);
+    this.saveActive({
+      best: { ...(player.best ?? {}), [this.mapId]: Math.floor(wave) },
+    });
     return true;
+  }
+
+  /**
+   * Every character this browser knows, newest activity first.
+   *
+   * Returned as a sorted array rather than the raw map because this is what the
+   * roster list draws, and a list that reshuffles between frames is unreadable.
+   */
+  rosterList() {
+    return Object.values(this.roster)
+      .map((p) => ({ ...p, active: p.name === this.playerName }))
+      .sort((a, b) => (b.lastSeen ?? 0) - (a.lastSeen ?? 0));
   }
 
   /**
@@ -398,8 +539,18 @@ class Game {
     if (wave <= this._trackedWave) return;
     this._trackedWave = wave;
     if (this.recordBest(wave)) this._announceUnlock();
-    // Cores accrue per wave, scaled by difficulty so a harder run pays better.
-    this.addCores(1 + this.difficultyIndex + Math.floor(wave / 10));
+    /*
+      Cores are the persistent currency and they are deliberately scarce: one
+      drop every third wave, worth a little more on a harder difficulty and a
+      little more as the run goes deeper. Paying out on EVERY wave (the previous
+      rule) banked roughly 184 Cores for a wave-40 run against a tree that costs
+      about 1100 to complete, so a player maxed the whole thing in seven runs and
+      the tree stopped being a long-term goal. The same run now banks ~35, which
+      puts a full clear somewhere around thirty runs.
+    */
+    if (wave % 3 === 0) {
+      this.addCores(1 + Math.floor(this.difficultyIndex / 2) + Math.floor(wave / 20));
+    }
   }
 
   /** Say it once, the first time a map's unlock wave is cleared. */
@@ -423,12 +574,28 @@ class Game {
     const name = sanitiseName(raw);
     if (!name) return [false, 'Enter a name first'];
 
-    if (!this.players[name]) this.players[name] = { best: {} };
     this.playerName = name;
     writeActiveName(name);
-    writePlayers(this.players);
+
+    /*
+      A brand new name starts from nothing, so it needs a record before anything
+      reads it. `savePlayer` is a read-modify-write of the whole roster, so the
+      fresh copy is loaded first -- writing straight from the in-memory map would
+      persist whatever this tab last saw and could drop a character added in
+      another tab.
+    */
+    this.roster = readRoster();
+    if (!this.roster[name]) {
+      const created = savePlayer(name, {});
+      if (created) this.roster[name] = created;
+    } else {
+      savePlayer(name, {});
+    }
+    this.roster = readRoster();
+
     // A new character climbs the tree from nothing, like their map unlocks.
-    this.metaState = readMeta(name);
+    this.metaState = { cores: 0, nodes: {} };
+    this.loadActiveMeta();
     this.meta = this.resolveMeta();
 
     // The name gate is closed by the overlay on the next frame; reset the run
@@ -471,13 +638,17 @@ class Game {
 
     // Carry a pre-progression best wave onto the first map. Only fires when
     // there are no characters at all, so it cannot overwrite real progress.
-    if (migrateLegacyBest(this.players, this.levels[0]?.id)) writePlayers(this.players);
+    if (migrateLegacyBest(this.roster, this.levels[0]?.id)) writeRoster(this.roster);
 
     // A remembered name can be missing after storage is cleared, or if it was
     // created by a build with a different sanitiser.
-    if (this.playerName && !this.players[this.playerName]) {
-      this.players[this.playerName] = { best: {} };
+    this.roster = readRoster();
+    if (this.playerName && !this.roster[this.playerName]) {
+      const created = savePlayer(this.playerName, {});
+      if (created) this.roster[this.playerName] = created;
     }
+    this.loadActiveMeta();
+    this.meta = this.resolveMeta();
   }
 
   /**
@@ -693,6 +864,15 @@ class Game {
     }
 
     applySave(this.world, this.config, data);
+
+    /*
+      A save carries the towers that were unlocked during its run. Those were
+      earned on this character, so loading a save adopts them rather than
+      discarding them -- otherwise a weapon dropped in a run that was saved and
+      resumed would vanish, and the shop would relock a tower the player is
+      already using.
+    */
+    for (const key of this.world.unlockedTowers) this.recordWeapon(key);
 
     // The sandbox flag travels with the save, so a run built with free level-20
     // towers cannot be loaded as if it were legitimate.
@@ -1039,8 +1219,8 @@ class Game {
         if (this.overlay) this.overlay.setSkillsOpen(false);
       },
 
-      onBuySkill: (id) => {
-        const [, message] = this.buySkill(id);
+      onBuySkill: (id, count) => {
+        const [, message] = this.buySkill(id, count);
         if (this.overlay) this.overlay.flash(message);
       },
     };
@@ -1103,6 +1283,16 @@ async function boot() {
 
   overlay.update(game.world, game.view, game.progress());
   game.refreshSaveInfo();
+
+  /*
+    Fetch the shared roster after the game is running rather than before it.
+    Sharing is optional, so boot must not wait on the network: the player gets a
+    playable board immediately and the character list fills in a moment later if
+    the shared store is configured and reachable.
+  */
+  game.syncRoster().then((ok) => {
+    if (ok) overlay.update(game.world, game.view, game.progress());
+  });
 
   // Fit again now the overlay has sized the shop bar and inspector. The first
   // fit ran before either had content, so it measured the wrong available

@@ -17,79 +17,79 @@
   "nodes": [
     { "id": "eco_tithe", "name": "War Tithe", "branch": "economy", "cost": 5, "maxRank": 3, "costGrowth": 1.6, "requires": [],
       "desc": "A levy on every cleared wave.",
-      "effects": [{ "stat": "startCoins", "kind": "flat", "value": 18 }] },
+      "effects": [{ "stat": "startCoins", "kind": "flat", "value": 7 }] },
 
     { "id": "eco_chest", "name": "War Chest", "branch": "economy", "cost": 12, "maxRank": 3, "costGrowth": 1.7, "requires": ["eco_tithe"],
       "desc": "A deeper treasury for the opening minutes.",
-      "effects": [{ "stat": "startCoins", "kind": "flat", "value": 32 }] },
+      "effects": [{ "stat": "startCoins", "kind": "flat", "value": 12 }] },
 
     { "id": "eco_mint", "name": "Mint", "branch": "economy", "cost": 10, "maxRank": 3, "costGrowth": 1.7, "requires": ["eco_tithe"],
       "desc": "Your hoard compounds harder.",
-      "effects": [{ "stat": "interestBase", "kind": "flat", "value": 0.002 }] },
+      "effects": [{ "stat": "interestBase", "kind": "flat", "value": 0.001 }] },
 
     { "id": "eco_victory", "name": "Victory Bonus", "branch": "economy", "cost": 12, "maxRank": 3, "costGrowth": 1.7, "requires": ["eco_chest"],
       "desc": "Celebration pays.",
-      "effects": [{ "stat": "waveBonus", "kind": "flat", "value": 3 }] },
+      "effects": [{ "stat": "waveBonus", "kind": "flat", "value": 2 }] },
 
     { "id": "eco_salvage", "name": "Salvage Rights", "branch": "economy", "cost": 14, "maxRank": 2, "costGrowth": 2.0, "requires": ["eco_chest"],
       "desc": "You keep more of what you tear down.",
-      "effects": [{ "stat": "sellRefund", "kind": "flat", "value": 0.03 }] },
+      "effects": [{ "stat": "sellRefund", "kind": "flat", "value": 0.02 }] },
 
-    { "id": "war_marks", "name": "Marksmanship", "branch": "warfare", "cost": 8, "maxRank": 5, "costGrowth": 1.5, "requires": [],
+    { "id": "war_marks", "name": "Marksmanship", "branch": "warfare", "cost": 8, "maxRank": 4, "costGrowth": 1.55, "requires": [],
       "desc": "Every gun hits harder.",
-      "effects": [{ "stat": "towerDamage", "kind": "mult", "value": 1.04 }] },
+      "effects": [{ "stat": "towerDamage", "kind": "mult", "value": 1.02 }] },
 
     { "id": "war_reach", "name": "Long Barrels", "branch": "warfare", "cost": 10, "maxRank": 3, "costGrowth": 1.6, "requires": ["war_marks"],
       "desc": "Engage from further out.",
-      "effects": [{ "stat": "towerRange", "kind": "mult", "value": 1.03 }] },
+      "effects": [{ "stat": "towerRange", "kind": "mult", "value": 1.015 }] },
 
     { "id": "war_rapid", "name": "Rapid Cycle", "branch": "warfare", "cost": 10, "maxRank": 3, "costGrowth": 1.6, "requires": ["war_marks"],
       "desc": "Faster action, faster fire.",
-      "effects": [{ "stat": "towerRate", "kind": "mult", "value": 1.03 }] },
+      "effects": [{ "stat": "towerRate", "kind": "mult", "value": 1.015 }] },
 
     { "id": "war_crit", "name": "Lucky Shots", "branch": "warfare", "cost": 18, "maxRank": 3, "costGrowth": 1.8, "requires": ["war_reach", "war_rapid"],
       "desc": "Weak points reveal themselves.",
-      "effects": [{ "stat": "critChance", "kind": "flat", "value": 0.015 }] },
+      "effects": [{ "stat": "critChance", "kind": "flat", "value": 0.01 }] },
 
     { "id": "war_overkill", "name": "Overkill", "branch": "warfare", "cost": 24, "maxRank": 3, "costGrowth": 1.8, "requires": ["war_crit"],
       "desc": "There is no such thing as too much gun.",
-      "effects": [{ "stat": "towerDamage", "kind": "mult", "value": 1.045 }] },
+      "effects": [{ "stat": "towerDamage", "kind": "mult", "value": 1.02 }] },
 
     { "id": "eng_blueprints", "name": "Field Blueprints", "branch": "engineering", "cost": 8, "maxRank": 4, "costGrowth": 1.5, "requires": [],
       "desc": "Standardised parts are cheaper to bolt on.",
-      "effects": [{ "stat": "upgradeCost", "kind": "mult", "value": 0.965 }] },
+      "effects": [{ "stat": "upgradeCost", "kind": "mult", "value": 0.98 }] },
 
     { "id": "eng_tooling", "name": "Precision Tooling", "branch": "engineering", "cost": 12, "maxRank": 3, "costGrowth": 1.6, "requires": ["eng_blueprints"],
       "desc": "Specialisation kits assemble themselves.",
-      "effects": [{ "stat": "specCost", "kind": "mult", "value": 0.965 }] },
+      "effects": [{ "stat": "specCost", "kind": "mult", "value": 0.98 }] },
 
-    { "id": "eng_veteran", "name": "Veteran Crew", "branch": "engineering", "cost": 20, "maxRank": 2, "costGrowth": 2.2, "requires": ["eng_blueprints"],
+    { "id": "eng_veteran", "name": "Veteran Crew", "branch": "engineering", "cost": 20, "maxRank": 1, "costGrowth": 2.2, "requires": ["eng_blueprints"],
       "desc": "Your gunners arrive with scars already.",
       "effects": [{ "stat": "startLevel", "kind": "flat", "value": 1 }] },
 
-    { "id": "eng_garrison", "name": "Garrison", "branch": "engineering", "cost": 25, "maxRank": 2, "costGrowth": 1.9, "requires": ["eng_tooling", "eng_veteran"],
+    { "id": "eng_garrison", "name": "Garrison", "branch": "engineering", "cost": 25, "maxRank": 1, "costGrowth": 1.9, "requires": ["eng_tooling", "eng_veteran"],
       "desc": "Room for one more gun, always.",
       "effects": [{ "stat": "towerCap", "kind": "flat", "value": 1 }] },
 
     { "id": "for_bulwark", "name": "Bulwark", "branch": "fortification", "cost": 6, "maxRank": 5, "costGrowth": 1.5, "requires": [],
       "desc": "Thicker walls at home.",
-      "effects": [{ "stat": "baseHp", "kind": "flat", "value": 6 }] },
+      "effects": [{ "stat": "baseHp", "kind": "flat", "value": 1 }] },
 
     { "id": "for_bastion", "name": "Bastion", "branch": "fortification", "cost": 14, "maxRank": 3, "costGrowth": 1.7, "requires": ["for_bulwark"],
       "desc": "A fortress, not a gate.",
-      "effects": [{ "stat": "baseHp", "kind": "flat", "value": 10 }] },
+      "effects": [{ "stat": "baseHp", "kind": "flat", "value": 2 }] },
 
     { "id": "for_militia", "name": "Militia", "branch": "fortification", "cost": 15, "maxRank": 3, "costGrowth": 1.7, "requires": ["for_bulwark"],
       "desc": "The locals pitch in.",
       "effects": [
-        { "stat": "startCoins", "kind": "flat", "value": 18 },
-        { "stat": "baseHp", "kind": "flat", "value": 6 }
+        { "stat": "startCoins", "kind": "flat", "value": 5 },
+        { "stat": "baseHp", "kind": "flat", "value": 1 }
       ] },
 
     { "id": "for_holdfast", "name": "Holdfast", "branch": "fortification", "cost": 30, "maxRank": 2, "costGrowth": 2.0, "requires": ["for_bastion", "for_militia"],
       "desc": "The last redoubt.",
       "effects": [
-        { "stat": "baseHp", "kind": "flat", "value": 8 },
+        { "stat": "baseHp", "kind": "flat", "value": 3 },
         { "stat": "towerCap", "kind": "flat", "value": 1 }
       ] }
   ]

@@ -1,0 +1,215 @@
+{
+  "seed": 12345,
+  "maxWave": 70,
+  "presets": [
+    "none",
+    "maxed"
+  ],
+  "summary": [
+    {
+      "budget": 16,
+      "bases": 2,
+      "preset": "none",
+      "maps": 11,
+      "medianWave": 39,
+      "medianDeltaWaves": 0
+    },
+    {
+      "budget": 16,
+      "bases": 2,
+      "preset": "maxed",
+      "maps": 11,
+      "medianWave": 46,
+      "medianDeltaWaves": 6
+    }
+  ],
+  "runs": [
+    {
+      "map": "level_01",
+      "budget": 16,
+      "bases": 2,
+      "byPreset": {
+        "none": {
+          "wave": 45,
+          "deltaWaves": 0,
+          "baseHpMax": 24
+        },
+        "maxed": {
+          "wave": 48,
+          "deltaWaves": 3,
+          "baseHpMax": 44
+        }
+      }
+    },
+    {
+      "map": "level_02",
+      "budget": 16,
+      "bases": 2,
+      "byPreset": {
+        "none": {
+          "wave": 40,
+          "deltaWaves": 0,
+          "baseHpMax": 24
+        },
+        "maxed": {
+          "wave": 46,
+          "deltaWaves": 6,
+          "baseHpMax": 44
+        }
+      }
+    },
+    {
+      "map": "level_03",
+      "budget": 16,
+      "bases": 2,
+      "byPreset": {
+        "none": {
+          "wave": 39,
+          "deltaWaves": 0,
+          "baseHpMax": 24
+        },
+        "maxed": {
+          "wave": 45,
+          "deltaWaves": 6,
+          "baseHpMax": 44
+        }
+      }
+    },
+    {
+      "map": "level_04",
+      "budget": 16,
+      "bases": 2,
+      "byPreset": {
+        "none": {
+          "wave": 43,
+          "deltaWaves": 0,
+          "baseHpMax": 24
+        },
+        "maxed": {
+          "wave": 48,
+          "deltaWaves": 5,
+          "baseHpMax": 44
+        }
+      }
+    },
+    {
+      "map": "level_05",
+      "budget": 16,
+      "bases": 2,
+      "byPreset": {
+        "none": {
+          "wave": 39,
+          "deltaWaves": 0,
+          "baseHpMax": 24
+        },
+        "maxed": {
+          "wave": 46,
+          "deltaWaves": 7,
+          "baseHpMax": 44
+        }
+      }
+    },
+    {
+      "map": "level_06",
+      "budget": 16,
+      "bases": 2,
+      "byPreset": {
+        "none": {
+          "wave": 39,
+          "deltaWaves": 0,
+          "baseHpMax": 24
+        },
+        "maxed": {
+          "wave": 46,
+          "deltaWaves": 7,
+          "baseHpMax": 44
+        }
+      }
+    },
+    {
+      "map": "level_07",
+      "budget": 16,
+      "bases": 2,
+      "byPreset": {
+        "none": {
+          "wave": 39,
+          "deltaWaves": 0,
+          "baseHpMax": 24
+        },
+        "maxed": {
+          "wave": 47,
+          "deltaWaves": 8,
+          "baseHpMax": 44
+        }
+      }
+    },
+    {
+      "map": "level_08",
+      "budget": 16,
+      "bases": 2,
+      "byPreset": {
+        "none": {
+          "wave": 11,
+          "deltaWaves": 0,
+          "baseHpMax": 24
+        },
+        "maxed": {
+          "wave": 39,
+          "deltaWaves": 28,
+          "baseHpMax": 44
+        }
+      }
+    },
+    {
+      "map": "level_09",
+      "budget": 16,
+      "bases": 2,
+      "byPreset": {
+        "none": {
+          "wave": 11,
+          "deltaWaves": 0,
+          "baseHpMax": 24
+        },
+        "maxed": {
+          "wave": 39,
+          "deltaWaves": 28,
+          "baseHpMax": 44
+        }
+      }
+    },
+    {
+      "map": "level_10",
+      "budget": 16,
+      "bases": 2,
+      "byPreset": {
+        "none": {
+          "wave": 45,
+          "deltaWaves": 0,
+          "baseHpMax": 24
+        },
+        "maxed": {
+          "wave": 49,
+          "deltaWaves": 4,
+          "baseHpMax": 44
+        }
+      }
+    },
+    {
+      "map": "level_11",
+      "budget": 16,
+      "bases": 2,
+      "byPreset": {
+        "none": {
+          "wave": 45,
+          "deltaWaves": 0,
+          "baseHpMax": 24
+        },
+        "maxed": {
+          "wave": 49,
+          "deltaWaves": 4,
+          "baseHpMax": 44
+        }
+      }
+    }
+  ]
+}

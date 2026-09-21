@@ -1,0 +1,76 @@
+{
+  "totalCostToMax": 1187,
+  "perBranch": {
+    "economy": 258,
+    "warfare": 426,
+    "engineering": 172,
+    "fortification": 331
+  },
+  "income": [
+    {
+      "difficulty": "relaxed",
+      "toWave30": 14,
+      "toWave40": 20,
+      "toWave50": 29,
+      "toWave60": 42
+    },
+    {
+      "difficulty": "easy",
+      "toWave30": 14,
+      "toWave40": 20,
+      "toWave50": 29,
+      "toWave60": 42
+    },
+    {
+      "difficulty": "normal",
+      "toWave30": 24,
+      "toWave40": 33,
+      "toWave50": 45,
+      "toWave60": 62
+    },
+    {
+      "difficulty": "hard",
+      "toWave30": 24,
+      "toWave40": 33,
+      "toWave50": 45,
+      "toWave60": 62
+    },
+    {
+      "difficulty": "brutal",
+      "toWave30": 34,
+      "toWave40": 46,
+      "toWave50": 61,
+      "toWave60": 82
+    },
+    {
+      "difficulty": "nightmare",
+      "toWave30": 34,
+      "toWave40": 46,
+      "toWave50": 61,
+      "toWave60": 82
+    }
+  ],
+  "runsToMax": {
+    "wave40/normal": 36,
+    "wave50/hard": 26.4,
+    "wave60/nightmare": 14.5
+  },
+  "maxedWarfare": {
+    "towerDamage": 1.149,
+    "towerRate": 1.046,
+    "towerRange": 1.046,
+    "critChance": 0.03,
+    "dpsMult": 1.201
+  },
+  "maxedFortification": {
+    "baseHp": 20,
+    "towerCap": 2
+  },
+  "maxedEconomy": {
+    "startCoins": 57,
+    "baseHp": 0,
+    "interestBase": 0.003,
+    "waveBonus": 6,
+    "sellRefund": 0.04
+  }
+}

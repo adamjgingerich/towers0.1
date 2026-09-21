@@ -51,14 +51,26 @@ export function hasSave() {
 // ------------------------------------------------------------- characters
 
 /**
- * Named characters and their progress.
+ * Named characters and everything they own.
+ *
+ * One record per name, rather than the two separate tables this used to keep
+ * (`players` for best waves, `meta` for the skill tree). They were split when a
+ * character only had two things; a character now also owns the secret weapons
+ * they have earned and the timestamps that make a roster list worth reading, and
+ * three tables keyed by the same name is three chances for them to disagree.
  *
  * Progress is per name, not per install, because "pick a character name" only
- * means something if a second name starts from nothing. A character owns one
- * number per map -- the furthest wave survived there -- and everything else
- * (which maps are open) is derived from that, so the two can never disagree.
+ * means something if a second name starts from nothing.
+ *
+ * Everything here lives in localStorage, which is **per browser**. Two people on
+ * two machines never see each other's characters. `src/sync.js` adds an optional
+ * shared store on top for exactly that reason; this module stays the source of
+ * truth either way, and works offline.
  */
+const ROSTER_KEY = 'towers.roster.v2';
+/** Superseded by ROSTER_KEY. Read once, folded in, then left alone. */
 const PLAYERS_KEY = 'towers.players.v1';
+const META_KEY = 'towers.meta.v1';
 const ACTIVE_KEY = 'towers.player.v1';
 /** Pre-progression builds kept a single best wave. Migrated on first run. */
 const LEGACY_BEST_KEY = 'towers.bestWave';
@@ -73,6 +85,9 @@ export const UNLOCK_WAVE = 40;
 
 /** Long enough for a name, short enough to fit the HUD and stay a sane key. */
 export const MAX_NAME_LENGTH = 16;
+
+/** How many characters one browser will keep. Bounded so the list stays a list. */
+export const MAX_PLAYERS = 24;
 
 /**
  * Clean a typed name into something safe to use as an object key and to draw.
@@ -89,43 +104,193 @@ export function sanitiseName(raw) {
     .slice(0, MAX_NAME_LENGTH);
 }
 
-/** @returns {Record<string, {best: Record<string, number>}>} */
-export function readPlayers() {
-  try {
-    const raw = window.localStorage.getItem(PLAYERS_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-    const out = {};
-    for (const [name, value] of Object.entries(parsed)) {
-      const clean = sanitiseName(name);
-      if (!clean) continue;
-      const best = value && typeof value.best === 'object' && value.best !== null
-        ? value.best
-        : {};
-      // Numbers only: a corrupted entry must not become NaN and poison every
-      // comparison it touches.
-      const safe = {};
-      for (const [mapId, wave] of Object.entries(best)) {
-        const n = Number(wave);
-        if (Number.isFinite(n) && n > 0) safe[mapId] = Math.floor(n);
-      }
-      out[clean] = { best: safe };
-    }
-    return out;
-  } catch {
-    return {};
-  }
+/** A character who has never played. */
+export function blankPlayer(name, now = Date.now()) {
+  return {
+    name,
+    best: {},
+    cores: 0,
+    nodes: {},
+    weapons: [],
+    runs: 0,
+    createdAt: now,
+    lastSeen: now,
+  };
 }
 
-/** @returns {boolean} false when the write was rejected */
-export function writePlayers(players) {
+/**
+ * Coerce one stored record into a known shape.
+ *
+ * Numbers go through `Number.isFinite` rather than `Number(x) || 0`, because a
+ * saved 0 is a real value in all three numeric fields here and `||` would treat
+ * it as missing. Anything unrecognised degrades to empty rather than throwing:
+ * a corrupt character should cost the player that character, never the game.
+ */
+function cleanPlayer(name, raw, fallbackNow) {
+  const out = blankPlayer(name, fallbackNow);
+  if (!raw || typeof raw !== 'object') return out;
+
+  if (raw.best && typeof raw.best === 'object' && !Array.isArray(raw.best)) {
+    for (const [mapId, wave] of Object.entries(raw.best)) {
+      const n = Number(wave);
+      if (Number.isFinite(n) && n > 0) out.best[mapId] = Math.floor(n);
+    }
+  }
+
+  const cores = Number(raw.cores);
+  out.cores = Number.isFinite(cores) && cores > 0 ? Math.floor(cores) : 0;
+
+  if (raw.nodes && typeof raw.nodes === 'object' && !Array.isArray(raw.nodes)) {
+    for (const [id, rank] of Object.entries(raw.nodes)) {
+      const n = Number(rank);
+      if (Number.isInteger(n) && n >= 1) out.nodes[id] = n;
+    }
+  }
+
+  /*
+    Weapons are tower keys, so they are filtered against the roster the game
+    actually ships. A key left over from an older build would otherwise sit in
+    the list forever, and `unlockedTowers` would claim a tower that no longer
+    exists.
+  */
+  if (Array.isArray(raw.weapons)) {
+    out.weapons = [...new Set(raw.weapons.filter((k) => typeof k === 'string' && k))];
+  }
+
+  const runs = Number(raw.runs);
+  out.runs = Number.isFinite(runs) && runs > 0 ? Math.floor(runs) : 0;
+  const created = Number(raw.createdAt);
+  out.createdAt = Number.isFinite(created) && created > 0 ? created : fallbackNow;
+  const seen = Number(raw.lastSeen);
+  out.lastSeen = Number.isFinite(seen) && seen > 0 ? seen : out.createdAt;
+  return out;
+}
+
+/**
+ * Fold the two superseded tables into one roster.
+ *
+ * Runs only when there is no roster yet, so it can never overwrite live data.
+ * The old keys are deliberately left in place: they cost a few hundred bytes,
+ * and deleting them would make a rollback to the previous build lose everyone's
+ * progress. Re-running this is idempotent because of the same guard.
+ */
+function migrateToRoster(now) {
+  const out = {};
+  const readOld = (key) => {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const oldPlayers = readOld(PLAYERS_KEY);
+  const oldMeta = readOld(META_KEY);
+  const names = new Set([...Object.keys(oldPlayers), ...Object.keys(oldMeta)]);
+
+  for (const rawName of names) {
+    const name = sanitiseName(rawName);
+    if (!name) continue;
+    const merged = { ...(oldPlayers[rawName] ?? {}) };
+    const meta = oldMeta[rawName];
+    if (meta && typeof meta === 'object') {
+      merged.cores = meta.cores;
+      merged.nodes = meta.nodes;
+    }
+    out[name] = cleanPlayer(name, merged, now);
+  }
+  return out;
+}
+
+/**
+ * Every character this browser knows about.
+ *
+ * @returns {Record<string, object>} name -> record
+ */
+export function readRoster() {
+  const now = Date.now();
   try {
-    window.localStorage.setItem(PLAYERS_KEY, JSON.stringify(players));
+    const raw = window.localStorage.getItem(ROSTER_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        const out = {};
+        for (const [rawName, value] of Object.entries(parsed)) {
+          const name = sanitiseName(rawName);
+          if (!name) continue;
+          out[name] = cleanPlayer(name, value, now);
+        }
+        return out;
+      }
+    }
+  } catch {
+    // Fall through to migration: a corrupt roster is still better replaced by
+    // the legacy tables than by nothing.
+  }
+
+  const migrated = migrateToRoster(now);
+  if (Object.keys(migrated).length > 0) writeRoster(migrated);
+  return migrated;
+}
+
+/** @returns {boolean} false when the write was rejected (quota, private mode) */
+export function writeRoster(roster) {
+  try {
+    window.localStorage.setItem(ROSTER_KEY, JSON.stringify(roster ?? {}));
     return true;
   } catch {
     return false;
   }
+}
+
+/** One character's record, or a blank one if the name is unknown. */
+export function readPlayer(name) {
+  const clean = sanitiseName(name);
+  if (!clean) return blankPlayer('');
+  return readRoster()[clean] ?? blankPlayer(clean);
+}
+
+/**
+ * Merge a patch into one character and persist.
+ *
+ * Read-modify-write rather than a whole-roster save, so a caller that only knows
+ * about the active character cannot clobber a different one that was updated in
+ * another tab.
+ *
+ * @returns {object|null} the saved record, or null if it could not be stored
+ */
+export function savePlayer(name, patch) {
+  const clean = sanitiseName(name);
+  if (!clean) return null;
+  const roster = readRoster();
+  const current = roster[clean] ?? blankPlayer(clean);
+  const next = cleanPlayer(clean, { ...current, ...patch, name: clean }, current.createdAt);
+  next.lastSeen = Date.now();
+  roster[clean] = next;
+
+  // Oldest first once over the cap, so a shared machine does not grow forever.
+  const names = Object.keys(roster);
+  if (names.length > MAX_PLAYERS) {
+    names
+      .sort((a, b) => (roster[a].lastSeen ?? 0) - (roster[b].lastSeen ?? 0))
+      .slice(0, names.length - MAX_PLAYERS)
+      .forEach((old) => { delete roster[old]; });
+  }
+
+  return writeRoster(roster) ? next : null;
+}
+
+/** Forget one character. Their record is gone; there is no undo. */
+export function deletePlayer(name) {
+  const clean = sanitiseName(name);
+  if (!clean) return false;
+  const roster = readRoster();
+  if (!roster[clean]) return false;
+  delete roster[clean];
+  return writeRoster(roster);
 }
 
 export function readActiveName() {
@@ -133,77 +298,6 @@ export function readActiveName() {
     return sanitiseName(window.localStorage.getItem(ACTIVE_KEY));
   } catch {
     return '';
-  }
-}
-
-// ------------------------------------------------------------- meta (skills)
-
-/**
- * Persistent skill-tree progress, keyed by character name.
- *
- * Stored separately from the players table because its shape is different: a
- * wallet of Cores plus bought node ranks, not per-map best waves. Per-name so a
- * second character climbs the tree from nothing, exactly like map unlocks.
- */
-const META_KEY = 'towers.meta.v1';
-
-/**
- * @param {string} playerName
- * @returns {{cores: number, nodes: Record<string, number>}}
- */
-export function readMeta(playerName) {
-  const empty = { cores: 0, nodes: {} };
-  const name = sanitiseName(playerName);
-  if (!name) return empty;
-  try {
-    const raw = window.localStorage.getItem(META_KEY);
-    if (!raw) return empty;
-    const parsed = JSON.parse(raw);
-    const entry = parsed && typeof parsed === 'object' && parsed[name]
-      ? parsed[name]
-      : null;
-    if (!entry || typeof entry !== 'object') return empty;
-
-    const cores = Number(entry.cores);
-    const nodes = {};
-    if (entry.nodes && typeof entry.nodes === 'object') {
-      for (const [id, rank] of Object.entries(entry.nodes)) {
-        const n = Number(rank);
-        if (Number.isInteger(n) && n >= 1) nodes[id] = n;
-      }
-    }
-    return {
-      cores: Number.isFinite(cores) && cores >= 0 ? Math.floor(cores) : 0,
-      nodes,
-    };
-  } catch {
-    return empty;
-  }
-}
-
-/**
- * @param {string} playerName
- * @param {{cores: number, nodes: Record<string, number>}} meta
- * @returns {boolean} false when the write was rejected
- */
-export function writeMeta(playerName, meta) {
-  const name = sanitiseName(playerName);
-  if (!name) return false;
-  try {
-    let all = {};
-    const raw = window.localStorage.getItem(META_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') all = parsed;
-    }
-    all[name] = {
-      cores: Math.max(0, Math.floor(Number(meta?.cores) || 0)),
-      nodes: meta?.nodes && typeof meta.nodes === 'object' ? meta.nodes : {},
-    };
-    window.localStorage.setItem(META_KEY, JSON.stringify(all));
-    return true;
-  } catch {
-    return false;
   }
 }
 

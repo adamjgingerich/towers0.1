@@ -43,6 +43,41 @@
       "description": "A vertical snake whose folds close in unevenly. Five long lanes that nearly touch.",
       "tint": "#b49ad0",
       "zoom": 1.3
+    },
+    {
+      "id": "level_07",
+      "name": "The Rungs",
+      "description": "Two long rails crossed by rungs, with a wide open belly between them.",
+      "tint": "#dfae52",
+      "zoom": 1.0
+    },
+    {
+      "id": "level_08",
+      "name": "Horseshoe",
+      "description": "A lane that hugs the edges of the board, leaving a wide open field in the middle.",
+      "tint": "#69b8a3",
+      "zoom": 1.0
+    },
+    {
+      "id": "level_09",
+      "name": "The Labyrinth",
+      "description": "Wall after wall, each with two gaps. Pick your pockets carefully.",
+      "tint": "#e0815f",
+      "zoom": 1.0
+    },
+    {
+      "id": "level_10",
+      "name": "The Gyre",
+      "description": "Enemies spawn in the middle and unwind outward to the corner. Build rings around them.",
+      "tint": "#7f9fd8",
+      "zoom": 1.2
+    },
+    {
+      "id": "level_11",
+      "name": "The Horn",
+      "description": "An hourglass lane that pinches to a narrow waist, then flares wide again.",
+      "tint": "#d87fa8",
+      "zoom": 1.0
     }
   ]
 }

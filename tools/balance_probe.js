@@ -320,6 +320,11 @@ export class ProbePlayer {
 /**
  * Run one probe.
  *
+ * `meta` is a resolved skill-tree bag (see `resolveMeta`). It is null by default,
+ * which measures the *bare* curve -- a player who has bought nothing. Pass a
+ * resolved bag to measure what the curve actually plays like for someone who owns
+ * part of the tree; the two are very different games late on.
+ *
  * @returns {{budget:number, seed:number, mapId:string, survived:boolean,
  *            wave:number, baseHp:number, baseHpMax:number, leaks:number,
  *            kills:number, towers:number, specs:number, maxLevel:number,
@@ -334,9 +339,10 @@ export function runProbe(config, {
   upgrade = true,
   barracksPolicy = 0,
   terrain = null,
+  meta = null,
 } = {}) {
   const started = performance.now();
-  const world = new World(config, config.waves.map, { seed, terrain });
+  const world = new World(config, config.waves.map, { seed, terrain, meta });
   const player = new ProbePlayer(world, { budget, specPolicy, upgrade, barracksPolicy });
 
   let peakEnemies = 0;

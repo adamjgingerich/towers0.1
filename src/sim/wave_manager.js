@@ -156,6 +156,30 @@ export class WaveManager {
     return Math.min(s.armor_cap ?? Infinity, ramped);
   }
 
+  /**
+   * Crowd-control resistance every enemy gains by this wave.
+   *
+   * Armour answers builds that fire many small shots; this answers builds that
+   * lean on slowing everything to a crawl and letting the lane do the work.
+   * Without it, `applySlow` reads `d.cc_resist`, which is a constant per type --
+   * 0.0 on seven of the eleven -- so a frost build applied its full slow to a
+   * wave-60 Colossus exactly as it did to a wave-1 Basic. The tower's four
+   * specialisation tiers kept multiplying the slow while the enemy side of that
+   * contest never moved at all.
+   *
+   * It is resist, not immunity: the cap leaves a meaningful slow still landing,
+   * so frost remains a real purchase rather than becoming dead weight. Scaled by
+   * `growth` for consistency with armour, and deliberately not by `power` -- this
+   * is a flat fraction, and Nightmare's 6.5x would push it past 1.0.
+   */
+  ccResistBonus(wave) {
+    const s = this.scaling;
+    const perWave = s.cc_resist_lin ?? 0;
+    if (perWave <= 0) return 0;
+    const ramped = Math.max(0, wave - 1) * perWave * this.diff.growth;
+    return Math.min(s.cc_resist_cap ?? Infinity, ramped);
+  }
+
   bountyMult(wave) {
     const s = this.scaling;
     return (1.0 + s.bounty_lin * (wave - 1)) * s.bounty_exp ** (wave - 1);

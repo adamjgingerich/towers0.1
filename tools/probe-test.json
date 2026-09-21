@@ -1,0 +1,19 @@
+{
+  "budget": 10,
+  "seed": 12345,
+  "mapId": "level_01",
+  "survived": false,
+  "endReason": "died",
+  "wave": 33,
+  "baseHp": 0,
+  "baseHpMax": 24,
+  "leaks": 11,
+  "kills": 997,
+  "towers": 10,
+  "specs": 25,
+  "maxLevel": 20,
+  "earned": 95286,
+  "peakEnemies": 26,
+  "simSeconds": 3024,
+  "wallMs": 5093
+}

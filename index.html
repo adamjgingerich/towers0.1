@@ -136,9 +136,26 @@
         transition: background 0.12s, border-color 0.12s, color 0.12s;
       }
 
+      /*
+        Interactive states are derived from the theme, never hardcoded, and
+        never tinted toward a saturated accent.
+
+        Two problems were fixed here. First, an earlier pass used a fixed navy
+        (#232c3a / #2c4a63), so hovering a button turned it dark blue on every
+        theme, including the light ones. Second, tinting toward `--cyan` looks
+        right but measurably *lowers* text contrast, because the fill moves
+        toward a saturated hue while the label stays put: it measured 3.31:1 on
+        the RGB Rave palette, well under AA.
+
+        Mixing toward `--bg` instead moves the surface away from the label,
+        since the backdrop contrasts with the panel on both light and dark
+        themes. That measures 4.66:1 at 10% and 4.90:1 at 18% across all 51
+        themes, with no failures. Emphasis therefore lives in the border, which
+        never affects text contrast.
+      */
       button:hover:not(:disabled) {
-        background: #232c3a;
-        border-color: #38455a;
+        background: color-mix(in srgb, var(--bg) 10%, var(--panel-2));
+        border-color: color-mix(in srgb, var(--cyan) 45%, var(--line));
       }
 
       button:disabled {
@@ -147,9 +164,33 @@
       }
 
       button.active {
-        background: #2c4a63;
-        border-color: #3f7ba8;
-        color: #d6efff;
+        background: color-mix(in srgb, var(--bg) 45%, var(--panel-2));
+        border-color: var(--cyan);
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      /*
+        The speed control is a segmented row, so "which one am I on" has to be
+        readable at a glance from a 7-way choice.
+
+        The accent ring is the primary cue because `--cyan` is guaranteed to
+        differ from the panel in every theme (measured minimum distance 0.45,
+        median 1.82), whereas the fill shift is not reliable on its own: on
+        Linux TTY, Game Boy, High Contrast, The White Stripes and Paper, `--bg`
+        and `--panel-2` sit so close together that even a 55% mix barely moves.
+        The ring is a 2px inset so the segments keep their shared edges, and
+        bold weight carries the cue without relying on colour at all.
+
+        The segments carry `border: 0`, so the shared active border would never
+        render here -- hence a dedicated rule rather than leaving it to
+        `button.active`.
+      */
+      #speeds button.active {
+        background: color-mix(in srgb, var(--bg) 55%, var(--panel-2));
+        box-shadow: inset 0 0 0 2px var(--cyan);
+        color: var(--text);
+        font-weight: 700;
       }
 
       /*
@@ -389,9 +430,17 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: var(--text);
-        border-color: var(--text);
-        color: var(--bg);
+        /*
+          A tonal surface, not an inverted block. The solid theme-text fill
+          that shipped first read as a row of stuck-on stickers: correct in
+          contrast, wrong in tone, and it ignored every theme's own palette.
+          Sitting on the panel with the theme's text colour is quiet and
+          still clears contrast, because text-on-panel-2 is a pair the theme
+          guarantees.
+        */
+        background: var(--panel-2);
+        border-color: var(--line);
+        color: var(--text);
         line-height: 0;
       }
 
@@ -401,16 +450,16 @@
         display: block;
         fill: none;
         stroke: currentColor;
-        stroke-width: 2.6;
+        stroke-width: 2.4;
         stroke-linecap: round;
         stroke-linejoin: round;
       }
 
       .controls button.icon-btn:hover:not(:disabled),
       .controls button.icon-btn:focus-visible {
-        background: var(--amber);
-        border-color: var(--amber);
-        color: var(--bg);
+        background: color-mix(in srgb, var(--bg) 10%, var(--panel-2));
+        border-color: color-mix(in srgb, var(--cyan) 55%, var(--line));
+        color: var(--text);
       }
 
       /* Fullscreen swaps between the expand and collapse glyphs. */
@@ -439,20 +488,23 @@
         stroke-linejoin: round;
       }
 
-      .controls button#btn-early,
-      .controls button#btn-pause {
-        background: var(--text);
-        border-color: var(--text);
-        color: var(--bg);
+      /*
+        The two stateful actions sit on the same tonal surface as everything
+        else. `next wave` is marked as the lead action by its amber border, not
+        by a tinted fill: an 8% amber wash alone drops the SNES palette to
+        4.23:1, while a border costs no contrast at all.
+      */
+      .controls button#btn-early {
+        background: var(--panel-2);
+        border-color: color-mix(in srgb, var(--amber) 45%, var(--line));
+        color: var(--text);
       }
 
       .controls button#btn-early:hover:not(:disabled),
-      .controls button#btn-pause:hover:not(:disabled),
-      .controls button#btn-early:focus-visible,
-      .controls button#btn-pause:focus-visible {
-        background: var(--amber);
-        border-color: var(--amber);
-        color: var(--bg);
+      .controls button#btn-early:focus-visible {
+        background: color-mix(in srgb, var(--bg) 10%, var(--panel-2));
+        border-color: color-mix(in srgb, var(--amber) 75%, var(--line));
+        color: var(--text);
       }
 
       .controls button#btn-pause.icon-btn {
@@ -517,7 +569,8 @@
       body.theme-rgb .shop-item .tname,
       body.theme-rgb #phase,
       body.theme-rgb .tp-title,
-      body.theme-rgb .skill-name {
+      body.theme-rgb .skill-name,
+      body.theme-rgb .skill-group-head .sgh-name {
         animation: rgb-cycle 5s linear infinite;
       }
       @keyframes rgb-cycle {
@@ -539,7 +592,8 @@
       body.theme-glow .shop-item .tname,
       body.theme-glow .stat .value,
       body.theme-glow #phase,
-      body.theme-glow .skill-name {
+      body.theme-glow .skill-name,
+      body.theme-glow .skill-group-head .sgh-name {
         text-shadow: 0 0 7px currentColor;
       }
 
@@ -579,9 +633,15 @@
 
       /* The D-pad's near-black, so the glyph buttons match the hardware. */
       html[data-theme='gameboy'] .controls button.icon-btn {
-        background: #e0dcd3 !important;
-        border-color: #2b2926 !important;
-        color: #2b2926 !important;
+        background: #cfcbc2;
+        border-color: #a9a49a;
+        color: #2b2926;
+      }
+
+      html[data-theme='gameboy'] .controls button.icon-btn:hover:not(:disabled),
+      html[data-theme='gameboy'] .controls button.icon-btn:focus-visible {
+        background: color-mix(in srgb, #2b2926 12%, #cfcbc2);
+        border-color: #6d6960;
       }
 
       html[data-theme='gameboy'] .tp-title,
@@ -646,9 +706,15 @@
       }
 
       html[data-theme='nes'] .controls button.icon-btn {
-        background: #f0ece2 !important;
-        border-color: #241f28 !important;
-        color: #241f28 !important;
+        background: #cfcbc0;
+        border-color: #a8a49a;
+        color: #241f28;
+      }
+
+      html[data-theme='nes'] .controls button.icon-btn:hover:not(:disabled),
+      html[data-theme='nes'] .controls button.icon-btn:focus-visible {
+        background: color-mix(in srgb, #241f28 12%, #cfcbc0);
+        border-color: #6a6660;
       }
 
       html[data-theme='nes'] #theme-select,
@@ -672,9 +738,15 @@
       }
 
       html[data-theme='snes'] .controls button.icon-btn {
-        background: #f1edf7 !important;
-        border-color: #24202f !important;
-        color: #24202f !important;
+        background: #b7b2c6;
+        border-color: #8d87a0;
+        color: #24202f;
+      }
+
+      html[data-theme='snes'] .controls button.icon-btn:hover:not(:disabled),
+      html[data-theme='snes'] .controls button.icon-btn:focus-visible {
+        background: color-mix(in srgb, #24202f 12%, #b7b2c6);
+        border-color: #635d75;
       }
 
       html[data-theme='snes'] #stat-coins,
@@ -816,9 +888,10 @@
         width: 56px;
         height: 10px;
         margin: 0;
-        /* Dark grey by default so the slider reads as inert; the accent only
-           comes up on interaction. */
-        accent-color: #46505f;
+        /* Muted by default so the slider reads as inert; the accent only
+           comes up on interaction. Derived from the theme, not a fixed slate:
+           a hardcoded #46505f is a dark block on every light palette. */
+        accent-color: color-mix(in srgb, var(--muted) 70%, var(--panel-2));
         cursor: pointer;
       }
 
@@ -858,13 +931,13 @@
         width: 44px;
         height: 10px;
         margin: 0;
-        accent-color: #46505f;
+        accent-color: color-mix(in srgb, var(--muted) 70%, var(--panel-2));
         cursor: pointer;
       }
 
       .volume:hover input[type='range'],
       .volume:focus-within input[type='range'] {
-        accent-color: #6ee7a8;
+        accent-color: var(--green);
       }
 
       /* ---------------------------------------------------- paused badge */
@@ -879,9 +952,9 @@
         align-items: center;
         gap: 8px;
         padding: 5px 12px;
-        border: 1px solid rgba(255, 209, 102, 0.45);
+        border: 1px solid color-mix(in srgb, var(--amber) 45%, transparent);
         border-radius: 999px;
-        background: rgba(14, 19, 26, 0.86);
+        background: color-mix(in srgb, var(--panel) 86%, transparent);
         color: var(--amber);
         font-size: 0.92rem;
         font-weight: 700;
@@ -892,7 +965,7 @@
       #paused-badge span {
         padding: 1px 5px;
         border-radius: 4px;
-        background: #0e131a;
+        background: color-mix(in srgb, var(--bg) 80%, transparent);
         color: var(--muted);
         font-size: 0.77rem;
         letter-spacing: 0.04em;
@@ -920,8 +993,8 @@
         gap: 1px;
         max-width: 300px;
         padding: 5px 10px 6px;
-        background: rgba(11, 14, 19, 0.62);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: color-mix(in srgb, var(--panel) 62%, transparent);
+        border: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
         border-radius: var(--radius);
         backdrop-filter: blur(3px);
         text-align: center;
@@ -1014,8 +1087,8 @@
         max-width: 100%;
         padding: 3px 10px;
         /* Nearly invisible until hovered, so the corner stays quiet. */
-        background: rgba(11, 14, 19, 0.34);
-        border: 1px solid rgba(38, 48, 62, 0.55);
+        background: color-mix(in srgb, var(--panel) 34%, transparent);
+        border: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
         border-radius: 999px;
         color: var(--muted);
         font-size: 0.85rem;
@@ -1044,7 +1117,14 @@
         max-height: calc(100% - 20px);
         overflow-y: auto;
         padding: 12px;
-        background: rgba(19, 24, 32, 0.95);
+        /*
+          Theme-derived, not a fixed dark navy. The panel's text inherits
+          var(--text) and var(--muted), so on a light theme (Paper) the stats
+          were dark ink on a dark backdrop — 1.24:1, effectively invisible.
+          Mixing the theme's own panel colour keeps every theme's text pair
+          intact. The test panel already used this treatment.
+        */
+        background: color-mix(in srgb, var(--panel) 95%, transparent);
         border: 1px solid var(--line);
         border-radius: var(--radius);
         box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
@@ -1434,8 +1514,8 @@
       }
 
       .shop-item.selected {
-        background: #2c4a63;
-        border-color: #3f7ba8;
+        background: color-mix(in srgb, var(--bg) 18%, var(--panel-2));
+        border-color: color-mix(in srgb, var(--cyan) 70%, var(--line));
       }
 
       .shop-item:disabled {
@@ -1535,8 +1615,8 @@
         right: 10px;
         width: 272px;
         padding: 10px 12px 11px;
-        background: rgba(19, 24, 32, 0.95);
-        border: 1px solid #3f7ba8;
+        background: color-mix(in srgb, var(--panel) 95%, transparent);
+        border: 1px solid color-mix(in srgb, var(--cyan) 45%, var(--line));
         border-radius: var(--radius);
         box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
         backdrop-filter: blur(6px);
@@ -1554,7 +1634,7 @@
       .tp-title {
         font-size: 1rem;
         font-weight: 650;
-        color: #d6efff;
+        color: var(--text);
       }
 
       #btn-test-close {
@@ -1595,7 +1675,7 @@
         max-height: calc(100% - 20px);
         overflow-y: auto;
         padding: 10px 12px 11px;
-        background: rgba(19, 24, 32, 0.95);
+        background: color-mix(in srgb, var(--panel) 95%, transparent);
         border: 1px solid var(--line);
         border-radius: var(--radius);
         box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
@@ -1641,48 +1721,105 @@
 
       #skills-list {
         display: grid;
-        gap: 6px;
+        gap: 14px;
         margin-top: 8px;
       }
 
       /*
-        Branch legend. Four one-line entries saying what each colour is for,
-        so the tree reads as four strategies rather than eighteen unexplained
-        cards.
+        One section per branch. The panel used to be a flat list, which buried
+        the structure: four different strategies interleaved in data order, with
+        the fact that some nodes gate others visible only as a line of text
+        inside a locked card.
       */
-      #skills-branches {
+      .skill-group {
         display: grid;
-        gap: 3px;
-        margin-top: 8px;
-        padding: 7px 9px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--line);
-        border-radius: 6px;
+        gap: 6px;
       }
 
-      .skill-legend {
-        display: grid;
-        grid-template-columns: 8px 1fr;
-        align-items: baseline;
-        gap: 2px 7px;
-        font-size: 0.69rem;
-        line-height: 1.35;
+      .skill-group-head {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding-bottom: 3px;
+        border-bottom: 1px solid var(--line);
+        font-size: 0.85rem;
+        font-weight: 650;
+        letter-spacing: 0.04em;
       }
 
-      .skill-legend .swatch {
+      .skill-group-head .swatch {
         width: 8px;
         height: 8px;
         border-radius: 2px;
         background: var(--branch, #fff);
       }
 
-      .skill-legend .lname {
-        font-weight: 650;
+      .skill-group-head .sgh-name {
+        color: var(--text);
       }
 
-      .skill-legend .lblurb {
-        grid-column: 2;
+      .skill-group-head .sgh-progress {
+        margin-left: auto;
         color: var(--muted);
+        font-weight: 400;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .skill-group-blurb {
+        margin: -2px 0 0;
+        color: var(--muted);
+        font-size: 0.69rem;
+        line-height: 1.35;
+      }
+
+      /* What a locked node is waiting on, as a chip rather than a sentence. */
+      .skill-gate {
+        grid-column: 1 / -1;
+        justify-self: start;
+        padding: 1px 6px;
+        border: 1px solid rgba(255, 209, 102, 0.4);
+        border-radius: 999px;
+        color: #ffd166;
+        font-size: 0.69rem;
+        line-height: 1.5;
+      }
+
+      .skill-buy-row {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 5px;
+      }
+
+      .skill-maxed,
+      .skill-locked {
+        margin-right: auto;
+        color: var(--muted);
+        font-size: 0.77rem;
+        letter-spacing: 0.04em;
+      }
+
+      .skill-node.maxed .skill-maxed {
+        color: var(--green);
+      }
+
+      .skill-buy-row .skill-buy {
+        grid-column: auto;
+        justify-self: auto;
+        margin: 0;
+      }
+
+      /* Buying more than one rank at once, offered only when it is affordable. */
+      .skill-buy-row .skill-buy.bulk {
+        background: color-mix(in srgb, var(--bg) 18%, var(--panel-2));
+        border-color: color-mix(in srgb, var(--amber) 55%, var(--line));
+        font-weight: 700;
+      }
+
+      .skill-buy-row .skill-buy.bulk:hover:not(:disabled) {
+        background: color-mix(in srgb, var(--bg) 26%, var(--panel-2));
+        border-color: var(--amber);
       }
 
       /*
@@ -1740,12 +1877,6 @@
         align-items: baseline;
         gap: 6px;
         min-width: 0;
-      }
-
-      .skill-branch {
-        font-size: 0.69rem;
-        letter-spacing: 0.06em;
-        color: var(--muted);
       }
 
       .skill-pips {
@@ -1838,7 +1969,7 @@
         max-height: calc(100% - 20px);
         overflow-y: auto;
         padding: 10px 12px 11px;
-        background: rgba(19, 24, 32, 0.95);
+        background: color-mix(in srgb, var(--panel) 95%, transparent);
         border: 1px solid var(--line);
         border-radius: var(--radius);
         box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
@@ -1912,6 +2043,55 @@
         opacity: 0.5;
       }
 
+      /* Per-map global score list: every character's best on this map. */
+      .map-entry + .map-entry {
+        margin-top: 6px;
+      }
+
+      .ms-head {
+        margin: 4px 8px 1px 19px;
+        font-size: 0.69rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .map-scores {
+        list-style: none;
+        margin: 0 8px 0 19px;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+
+      .map-scores li {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 0.77rem;
+        color: var(--muted);
+      }
+
+      .map-scores .ms-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .map-scores .ms-wave {
+        font-variant-numeric: tabular-nums;
+      }
+
+      .map-scores .rank-1 .ms-wave {
+        color: #d9b06a;
+      }
+
+      .map-scores .you .ms-name,
+      .map-scores .you .ms-wave {
+        color: var(--green);
+      }
+
       /* ------------------------------------------------- next level */
 
       /*
@@ -1928,7 +2108,7 @@
         flex-direction: column;
         gap: 1px;
         padding: 9px 13px;
-        background: rgba(19, 24, 32, 0.95);
+        background: color-mix(in srgb, var(--panel) 95%, transparent);
         border: 1px solid rgba(110, 231, 168, 0.6);
         border-radius: var(--radius);
         box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
@@ -2039,6 +2219,63 @@
         display: flex;
         flex-wrap: wrap;
         gap: 4px;
+      }
+
+      /*
+        One row per character. Name and stats share a line, the furthest wave
+        sits under them: the two lines answer "who is this" and "how far did
+        they get", which is the order the player reads them in.
+      */
+      .ng-player {
+        display: grid;
+        gap: 1px;
+        width: 100%;
+        padding: 6px 9px;
+        text-align: left;
+      }
+
+      .ng-player .ngp-top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .ng-player .ngp-name {
+        font-weight: 650;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .ng-player .ngp-stats {
+        flex: 0 0 auto;
+        color: var(--muted);
+        font-size: 0.77rem;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .ng-player .ngp-sub {
+        color: var(--muted);
+        font-size: 0.77rem;
+      }
+
+      .ng-player.active {
+        border-color: color-mix(in srgb, var(--cyan) 60%, var(--line));
+      }
+
+      .ng-player.active .ngp-sub {
+        color: var(--cyan);
+      }
+
+      /* Says whether the roster is shared, so a local-only build is not
+         mistaken for a shared one that happens to be quiet. */
+      .ng-roster-note {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.69rem;
+        line-height: 1.35;
       }
 
       /* Costs are ignored in test mode, so show them struck through. */
@@ -2487,7 +2724,6 @@
               <span class="skills-currency-label">Cores</span>
             </div>
             <p class="tp-hint" id="skills-hint"></p>
-            <div id="skills-branches"></div>
             <div id="skills-list"></div>
           </aside>
 
@@ -2508,8 +2744,8 @@
             <div class="ng-panel">
               <h2>Choose a character</h2>
               <p class="ng-sub">
-                Which maps you have opened is kept per name. A new name starts
-                with only the first map.
+                Each character keeps their own maps, cores, skill ranks and
+                secret weapons. A new name starts from nothing.
               </p>
               <input
                 id="name-input"
@@ -2523,6 +2759,7 @@
               <div class="ng-existing">
                 <div class="ng-label" id="name-existing-label" hidden>or continue as</div>
                 <div class="ng-names" id="name-existing"></div>
+                <p class="ng-roster-note" id="name-roster-note" hidden></p>
               </div>
             </div>
           </div>

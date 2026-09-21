@@ -1,0 +1,79 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "metacheck",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tools/metacheck.mjs",
+				"--budgets",
+				"10,16,26",
+				"--presets",
+				"none,rank1,maxed"
+			],
+			"group": "none"
+		},
+		{
+			"label": "hello",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tools/hello.mjs"
+			],
+			"group": "none"
+		},
+		{
+			"label": "metacheck-min",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tools/metacheck.mjs",
+				"--maps",
+				"level_01",
+				"--budgets",
+				"16",
+				"--presets",
+				"none,maxed"
+			],
+			"group": "none"
+		},
+		{
+			"label": "metacheck-all",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tools/metacheck.mjs",
+				"--budgets",
+				"16",
+				"--presets",
+				"none,maxed"
+			],
+			"group": "none"
+		},
+		{
+			"label": "mapcheck",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tools/mapcheck.mjs"
+			],
+			"group": "none"
+		},
+		{
+			"label": "mapdiag",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"tools/metacheck.mjs",
+				"--maps",
+				"level_08,level_09",
+				"--budgets",
+				"10,16,26,50",
+				"--presets",
+				"none"
+			],
+			"group": "none"
+		}
+	]
+}

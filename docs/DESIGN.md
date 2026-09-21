@@ -1,9 +1,11 @@
 # Towers — Parameter Design
 
-PySide6 tower defense for Windows. Infinitode-style: fixed road path, grid tower placement,
-endless waves, in-run tower leveling.
+Tower defense for the browser (originally scoped as a PySide6/Windows prototype; sections written
+before the port still describe Qt internals). Infinitode-style: fixed road path, grid tower
+placement, endless waves, in-run tower leveling.
 
-**Decisions locked:** 6 towers / 7 enemies (incl. flyers) · endless only · sprite sheets · in-run progression only (no save-gated meta tree).
+**Decisions locked:** 17 towers / 25 enemies (incl. flyers) / 6 maps · endless only · sprite sheets ·
+in-run levelling **plus** a persistent per-character meta tree (section 11).
 
 ---
 
@@ -87,13 +89,16 @@ flowchart LR
 | `healer` | 180 | 1.3 | 2 | 22 | 2 | +15 hp/s to allies within 2 t |
 | `boss` | 5000 | 0.8 | 10 | 400 | 20 | slow/CC duration ×0.5 |
 
-Reserved-but-unused fields: `shield`, `regen`, `resist{}`, `size`, `death_spawn`.
+Reserved-but-unused fields: none. `shield`/`shield_regen`/`shield_delay`, `heal_per_sec`/`heal_radius`,
+`resist{}`, `spawn_on_death` and `cc_resist` were all wired but unused by the original seven types;
+the roster has since grown to 21 types and every one of them is now load-bearing. See the
+late-game counter table below.
 
 ---
 
 ## 4. Endless wave scaling
 
-$$hp_{mult}(w) = \bigl(1 + 0.098(w-1)\bigr) \cdot 1.058^{\,w-1}$$
+$$hp_{mult}(w) = \bigl(1 + 0.098(w-1)\bigr) \cdot 1.066^{\,w-1}$$
 
 $$count_{mult}(w) = 1 + 0.155(w-1), \qquad
 speed_{mult}(w) = \min\bigl(1.8,\ 1 + 0.008(w-1)\bigr)$$
@@ -122,6 +127,34 @@ It was then tightened back up (`hp_lin` 0.075 → 0.087, `hp_exp` 1.052 → 1.05
 0.135 → 0.145) because the eased version was too soft, alongside three changes that all push the
 other way: flyers now walk the road instead of flying a straight line, three of the ten towers are
 ground-only so they cannot answer those flyers at all, and banked coins earn interest.
+
+**Latest pass (tower scaling vs enemy scaling).** The complaint that drove this was concrete: a
+single base could reach the wave-40 unlock, which meant the tower cap never bit and extra bases had
+no purpose. Measurement agreed — a 10-tower build and a 26-tower build both died on wave 39, so
+bases 3 and 4 bought literally nothing, and only the full 50-tower saturation broke through.
+
+The cause was that tower power finished growing long before the enemy curve did. Per-level scaling
+gave a maxed tower 7.0x its base DPS (damage 1 + 0.12*19, rate 1 + 0.06*19) and the four
+specialisation tiers multiplied on top of that; a build reached it all by roughly wave 35 and then
+stopped dead while enemy health kept compounding. Three changes slow the player's growth and one
+accelerates the enemy's:
+
+| Change | From | To | Why |
+|---|---|---|---|
+| `xp_to_next_power` | 1.55 | 1.62 | levels arrive later, so the mid game is played with under-levelled towers |
+| `specialisation_cost_factor` | 1.2 | 1.35 | the four tiers are the real multipliers; making them dearer delays the power spike and favours another tower over another upgrade |
+| `spec_cost_growth` | 1.55 | 1.60 | same, compounding across the four tiers |
+| `hp_exp` | 1.060 | 1.066 | the late wall, where hp is the only curve still growing |
+
+`damage_per_level` / `rate_per_level` were tried first (0.12/0.06 → 0.09/0.045) and **reverted**:
+weakening every tower at every level collapses the early game too, dropping a 1-base run from wave
+33 to wave 11. The levers above bite in the mid and late game only, which is what was asked for.
+
+`heavy` also moved: `unlock_wave` 6 → 8 and `weight` 4.5 → 3.0. At wave 6 it arrived three waves
+after `fast` and leaked 3 per body, which measured as 15 base damage in a single wave on the maps
+with tighter lanes — a run-ender at exactly the point where the player has ~10 low-level towers.
+`mini_boss.hp_mult` went 4.0 → 3.2 for the same reason: the wave-10 mini-boss was finishing runs
+that the wave-7 heavy leak had already crippled.
 
 A matched comparison — same builder, same seed, same map, only the scaling changed — put the three
 versions close together, because the late-game wall is structural rather than curve-driven:
@@ -554,7 +587,82 @@ loops · enemies outside the viewport skip rendering.
 
 ---
 
-## 10. Open items before scaffolding
+## 11. Meta progression: Cores
+
+Cores are the only currency that survives a run. They are earned **every third wave**
+and banked per character, then spent on a tree of permanent buffs that apply to every
+map from the next run onward.
+
+| Param | Value |
+|---|---|
+| Currency | `Cores` (`data/skills.json`) |
+| Payout | `1 + floor(difficultyIndex / 2) + floor(wave / 20)` |
+| Cadence | every **third** cleared wave |
+| Nodes | 18, in 4 branches |
+| Cost of a rank | `cost × costGrowth^rank` |
+| **Total to own every rank** | **1 187** |
+
+### Why the payout was cut
+
+Cores used to arrive **every wave**, which paid 184 Cores by wave 40 — enough to own a
+maxed tree in about **seven runs**. At that rate the tree stops being a long-term goal
+and becomes a thing you finish and then forget, and the buffs it grants are live for the
+majority of the time you are playing the game.
+
+Diverting to every third wave drops wave-40 income to **33**, so a full tree is roughly
+**36 runs** away. That is the intended shape: you are always partway through the tree,
+and each purchase is a decision about *which* branch pays off next rather than a
+formality.
+
+| Difficulty | Cores by wave 40 |
+|---|---|
+| relaxed / easy | 20 |
+| normal / hard | 33 |
+| brutal / nightmare | 46 |
+
+| Path | Runs to a full tree |
+|---|---|
+| wave 40, normal | 36 |
+| wave 50, hard | 26.4 |
+| wave 60, nightmare | 14.5 |
+
+### What a maxed branch is worth
+
+The second half of the problem was that the nodes themselves were too strong. A maxed
+tree used to read as a separate progression system you could win the game with; the
+numbers below are the intended "tailwind, not a substitute for playing" ceiling.
+
+| Branch | Cost | Effect when fully maxed |
+|---|---|---|
+| Economy | 258 | start coins 330 → 387 (**+17 %**) |
+| Warfare | 426 | DPS **×1.20** (damage ×1.15, rate ×1.05, range ×1.05, crit 3 %) |
+| Engineering | 172 | upgrades −7.6 %, specialisations −5.9 %, towers start at level 2, +1 tower cap |
+| Fortification | 331 | base HP 24 → 44 (**×1.83**), +2 tower cap |
+
+Each row is that branch **on its own** — the branches overlap in what they touch
+(`startCoins` and `towerCap` are each granted by two of them), so the maxed tree is
+slightly better than any single row suggests.
+
+The Warfare number is the important one. It sits deliberately below the ×1.5–1.6 that a
+*single* specialisation tier is worth (section 6): the tree is not allowed to be better
+value than playing well, because if it is, the correct strategy becomes grinding weak
+runs instead of building well.
+
+### Panel layout
+
+The panel groups nodes by branch rather than listing them in data order. A flat list
+interleaved four different strategies and showed the `requires` graph only as a sentence
+inside a locked card, so "what can I actually buy" was hard to answer. Each group now
+carries a branch swatch, a `spent / total` rank counter and the branch blurb, and a node
+that is gated shows its missing prerequisite as a chip.
+
+Every number on a card is derived from that node's own `effects` on each render, so the
+panel cannot advertise a buff the simulation does not apply. Buying more than one rank at
+once is offered only when the wallet covers it, quoted at the exact summed cost.
+
+---
+
+## 12. Open items before scaffolding
 
 1. Tower **turret anatomy**: separate base+turret sprites (allows rotation) vs single sprite — affects the art spec.
 2. `healer` in wave 1–10 or gated to wave 12+ (new-player difficulty).

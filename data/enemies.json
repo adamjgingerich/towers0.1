@@ -46,8 +46,8 @@
     "leak": 3,
     "flying": false,
     "cc_resist": 0.0,
-    "unlock_wave": 6,
-    "weight": 4.5,
+    "unlock_wave": 8,
+    "weight": 3.0,
     "skill": 0.03,
     "death_fx": ""
   },
@@ -108,7 +108,7 @@
 
   "bulwark": {
     "name": "Bulwark",
-    "hp": 320,
+    "hp": 220,
     "speed": 1.05,
     "radius": 0.30,
     "armor": 6,
@@ -122,8 +122,9 @@
     "skill": 0.02,
 
     "_shield_note": "A regenerating barrier, not a flat resistance: damage is eaten by the pool before it reaches health, and the pool refills after `shield_delay` seconds without being hit. Chip damage therefore does almost nothing once regeneration outpaces it, and the answers are burst (sniper, cannon) or energy (tesla, whose shield_mult is 1.5). This is the multiplicative counterweight the flat armour scaling could not provide -- armour is subtracted, so it is irrelevant against a maxed tower, whereas a pool that refills scales with whatever is shooting it.",
-    "shield": 200,
-    "shield_regen": 35,
+    "_shield_rebalance_note": "The pool and the health above were re-carved when the pool started scaling with the wave. While it was authored flat it was effectively inert past wave 15 (0.5% of health at wave 30), so the whole of this type's durability sat in `hp`. Scaling it without moving that health would have made the type roughly 2.25x tankier against physical damage, which is a curve change rather than a mechanic change. Effective health against physical is now about 1.2x its old value and against energy slightly below it, which is the point: the barrier is the fight, and what you bring decides how long that fight is. Regen keeps the same ~5.7s refill as before, because the delay is the design decision and the rate only has to stay proportional to the pool.",
+    "shield": 80,
+    "shield_regen": 14,
     "shield_delay": 3.5,
 
     "death_fx": "shatter"
@@ -170,7 +171,7 @@
 
   "warden": {
     "name": "Warden",
-    "hp": 190,
+    "hp": 132,
     "speed": 1.7,
     "radius": 0.26,
     "armor": 2,
@@ -184,8 +185,8 @@
     "skill": 0.02,
 
     "_warden_note": "A shielded flyer, and the reason air defence cannot be one missile battery. Only five of the ten towers can touch air at all, and of those only the tesla is strong against a shield -- so a warden wave asks for air coverage *and* a damage type, which no single tower provides.",
-    "shield": 120,
-    "shield_regen": 22,
+    "shield": 48,
+    "shield_regen": 8.4,
     "shield_delay": 3.0,
 
     "death_fx": "pop"
@@ -206,5 +207,221 @@
     "weight": 0.0,
     "skill": 0.0,
     "death_fx": "boom"
+  },
+
+  "_late_game_note": "Enemies added after the roster used to stop growing at wave 26. The problem they solve is not that late waves were too easy -- they were not, a maxed build still dies in the forties -- but that the enemy side of the game stopped *developing*. Every tower gains four specialisation tiers with mechanics like true damage, armour shred, crits and execute, and past wave 26 nothing in the roster asked a question about any of them: all of it was answered by a bigger health bar. Each type below is built to contest one specific advanced-tower capability, so a build that leaned on it has to cover the gap. Health values are deliberately kept in band with the existing roster (comparable to bulwark or splitter) -- hp is documented in docs/DESIGN.md as the lever that moves *when* the wall arrives rather than whether it can be passed, so these are counters, not bigger numbers. Unlock waves 30/34/38/42 were chosen so every type is reachable inside the measured band of a competent run (a maxed 30-tower build dies around wave 50): at the original 32/40/48/56, hive and colossus never spawned at all, because the wall arrived before they did.",
+
+  "sentinel": {
+    "name": "Sentinel",
+    "hp": 210,
+    "speed": 0.95,
+    "radius": 0.32,
+    "armor": 8,
+    "armor_class": "armored",
+    "bounty": 46,
+    "leak": 4,
+    "flying": false,
+    "cc_resist": 0.15,
+    "unlock_wave": 30,
+    "weight": 3.2,
+    "skill": 0.025,
+
+    "_sentinel_note": "The answer to chip damage, and the first enemy the shield multiplier actually matters on in bulk. Physical damage hits its pool at 0.5x while energy hits at 1.5x -- a 3x swing -- and the pool refills after only 2.2s, so a gatling or flamethrower that relies on sustained small hits cannot out-damage the regeneration at all. Countered by burst (sniper, cannon), by energy (tesla, laser), or by true damage that skips to the health bar. Distinct from the bulwark: slower, tankier, and it leaks four rather than three. Health and pool sized so the barrier is a larger share of its durability than the bulwark's, with its faster 2.2s refill as the reason it costs more to leave alone.",
+    "shield": 92,
+    "shield_regen": 42,
+    "shield_delay": 2.2,
+
+    "death_fx": "shatter"
+  },
+
+  "wraith": {
+    "name": "Wraith",
+    "hp": 220,
+    "speed": 2.4,
+    "radius": 0.24,
+    "armor": 3,
+    "armor_class": "light",
+    "bounty": 42,
+    "leak": 3,
+    "flying": true,
+    "cc_resist": 0.55,
+    "unlock_wave": 34,
+    "weight": 2.8,
+    "skill": 0.03,
+
+    "_wraith_note": "The answer to a frost-locked lane. Crowd control is the one tower capability that had no counter of any kind: `cc_resist` is a constant per type and seven of the eleven sat at 0.0, so a frost build slowed a wave-60 enemy exactly as hard as a wave-1 one and the lane did the killing on its own. Its own 0.55 resistance stacks with the wave bonus to reach the ceiling, so it is close to unslowable by the time it appears -- it has to be shot. The ice resistance on top means a frost tower cannot even fall back on its own damage type, and being a flyer means only five of the seventeen towers can engage it at all.",
+    "_resist_note": "Per-type damage resistance. Wired since the start but unused by the original roster.",
+    "resist": { "ice": 0.35 },
+
+    "death_fx": "pop"
+  },
+
+  "hive": {
+    "name": "Hive",
+    "hp": 380,
+    "speed": 0.95,
+    "radius": 0.30,
+    "armor": 8,
+    "armor_class": "armored",
+    "bounty": 64,
+    "leak": 5,
+    "flying": false,
+    "cc_resist": 0.2,
+    "unlock_wave": 38,
+    "weight": 2.6,
+    "skill": 0.025,
+
+    "_hive_note": "The answer to single-target overkill. It splits into five swarmlings, each carrying a share of the parent's *scaled* health, so killing it adds real health to the wave rather than recycling it. A sniper that one-shots the parent still faces five fast children it was never aimed at, while a cannon or mortar clears parent and children together. The split is also a second consecutive check on the same capability the splitter introduced at wave 18, which is far enough back that a build could have forgotten it was ever a question.",
+    "spawn_on_death": { "key": "swarmling", "count": 5, "hp_share": 0.2 },
+
+    "death_fx": "goo"
+  },
+
+  "colossus": {
+    "name": "Colossus",
+    "hp": 620,
+    "speed": 0.65,
+    "radius": 0.38,
+    "armor": 22,
+    "armor_class": "armored",
+    "bounty": 130,
+    "leak": 9,
+    "flying": false,
+    "cc_resist": 0.4,
+    "unlock_wave": 42,
+    "weight": 2.2,
+    "skill": 0.03,
+
+    "_colossus_note": "The armour wall. 22 base armour plus the wave bonus is more than anything else in the game, including the boss, and armour is flat subtraction rather than a percentage -- so it takes a fixed bite out of every single hit and a many-small-hits build loses nearly its whole output to it, floored at the matrix's 10%. This is the enemy that makes `true_damage` (ap_rounds, depleted_uranium, HEAT shells) and `armor_shred` worth choosing over raw damage, and poison is the other answer because its armor_mult is 0 and bypasses the subtraction entirely. Slow and heavy: nine leak means one getting through is close to a lost run, which is what makes it a decision rather than a nuisance.",
+    "death_fx": "boom"
+  },
+
+  "swarmling": {
+    "name": "Swarmling",
+    "hp": 35,
+    "speed": 3.4,
+    "radius": 0.16,
+    "armor": 0,
+    "armor_class": "light",
+    "bounty": 3,
+    "leak": 1,
+    "flying": false,
+    "cc_resist": 0.0,
+    "unlock_wave": 1,
+    "weight": 0.0,
+    "skill": 0.0,
+    "_swarmling_note": "Never drawn from the wave pool -- weight 0 keeps it out, and it only ever exists as a hive's children. Listed here so the sim can find its definition, and so its bounty and leak are authored rather than inherited by accident. Cheap enough that clearing a hive is still worth doing, but five of them at 3.4 speed will punish a build that has no splash.",
+    "death_fx": ""
+  },
+
+  "_second_wave_note": "Second batch of additions, chosen to fill the gaps in the unlock schedule (nothing new appeared between waves 26 and 30, or 34 and 38) and to answer player capabilities the roster still could not contest. Each one targets a specific over-answer: flame's light-class bonus, unfocused spread damage, energy damage as the universal shield answer, and speed as a solved problem. `resist` is the lever here -- it has been wired since the start but only the wraith used it, so four of these five put it to work. Health is kept in band with the type it sits beside rather than above it: husk < heavy, obsidian ~ armored, behemoth ~ colossus. Only the marauder is deliberately outside its band, and it pays for that with weight 1.8 so it is a spike rather than a grind.",
+
+  "husk": {
+    "name": "Husk",
+    "hp": 300,
+    "speed": 1.25,
+    "radius": 0.28,
+    "armor": 5,
+    "armor_class": "light",
+    "bounty": 32,
+    "leak": 3,
+    "flying": false,
+    "cc_resist": 0.1,
+    "unlock_wave": 16,
+    "weight": 3.4,
+    "skill": 0.025,
+
+    "_husk_note": "The answer to leaning on fire. Fire is the only damage type with a class spread -- 1.5x against light, 0.5x against armored -- so a flamethrower is the single best answer to everything light in the roster, and by wave 16 a build can have solved most waves with one. The husk is deliberately `light` class so fire is *supposed* to beat it, and then resists 55% of it anyway: fire lands at 0.675x instead of 1.5x, which is a real cost without being immunity. Physical, energy and poison are untouched, and poison in particular does 2.2x what fire does here because its armor_mult is 0 and it skips the subtraction entirely. Sits between armored (220 hp, wave 9) and heavy (420 hp, wave 6) so it is a mid-tier brute rather than a new ceiling.",
+    "resist": { "fire": 0.55 },
+
+    "death_fx": "shatter"
+  },
+
+  "overseer": {
+    "name": "Overseer",
+    "hp": 230,
+    "speed": 1.15,
+    "radius": 0.26,
+    "armor": 3,
+    "armor_class": "light",
+    "bounty": 48,
+    "leak": 2,
+    "flying": false,
+    "cc_resist": 0.2,
+    "unlock_wave": 24,
+    "weight": 2.6,
+    "skill": 0.02,
+
+    "_overseer_note": "The second support type, and the one that makes target priority matter. The healer restores 22/s in a 2.5 radius; the overseer restores 52/s in 3.1, for more than double the healing over a wider area -- and it has less health than the heavy it is standing next to, so it is killable if it is *found*. That is the whole design: a pure damage-per-second build spreads fire across whatever is closest and never kills the overseer, while a build with a sniper on `strongest`, or a player who simply looks before the wave lands, deletes it first. Healing is also the one enemy ability that scales against total damage over time rather than against burst, so it is the natural next step after the healer.",
+    "heal_per_sec": 52.0,
+    "heal_radius": 3.1,
+
+    "death_fx": "coins"
+  },
+
+  "obsidian": {
+    "name": "Obsidian",
+    "hp": 230,
+    "speed": 2.1,
+    "radius": 0.26,
+    "armor": 7,
+    "armor_class": "light",
+    "bounty": 44,
+    "leak": 3,
+    "flying": false,
+    "cc_resist": 0.3,
+    "unlock_wave": 32,
+    "weight": 2.8,
+    "skill": 0.03,
+
+    "_obsidian_note": "The answer to the lesson the sentinel just taught. Sentinel arrives at wave 30 and says, correctly, 'shields are the problem, bring energy' -- and energy is a 3x swing against a shield, so committing to tesla and laser is the obvious response. Two waves later the obsidian resists energy by 45% and ice by 35%, so that commitment now has a hole in it. It is `light` class on purpose: fire still hits it at 1.5x, which is the counter-play, and fire is a type a shield-focused build is unlikely to have invested in. Ice resistance on top means a frost tower cannot fall back on its own damage type either. Health matches the armored (220) it shares a silhouette weight with, not the colossus.",
+    "resist": { "energy": 0.45, "ice": 0.35 },
+
+    "death_fx": "shatter"
+  },
+
+  "_endgame_note": "Two more, placed at 44 and 52 so the roster keeps producing new problems past the colossus. The measured band for a competent run tops out around wave 50 with a maxed build, so the marauder at 52 is deliberately aspirational -- it is the thing a finished build is for.",
+
+  "behemoth": {
+    "name": "Behemoth",
+    "hp": 480,
+    "speed": 0.75,
+    "radius": 0.36,
+    "armor": 18,
+    "armor_class": "armored",
+    "bounty": 130,
+    "leak": 9,
+    "flying": false,
+    "cc_resist": 0.42,
+    "unlock_wave": 44,
+    "weight": 2.2,
+    "skill": 0.03,
+
+    "_behemoth_note": "The first enemy that is both walls at once. The colossus answers many-small-hits builds with armour, and the bulwark and sentinel answer chip damage with a regenerating pool; each has a clean single answer, and a build that found that answer keeps it. The behemoth has 18 armour *and* a 150 pool, so armour penetration alone leaves the barrier standing and shield-breaking alone leaves the armour subtracting from every hit. Effective health is roughly level with the colossus rather than above it -- the difficulty is in the shape of the problem, not the size of the bar. Slow and heavy at 9 leak, so one getting through is close to a lost run, which is what makes it a decision rather than an annoyance.",
+    "shield": 150,
+    "shield_regen": 38,
+    "shield_delay": 3.2,
+
+    "death_fx": "boom"
+  },
+
+  "marauder": {
+    "name": "Marauder",
+    "hp": 200,
+    "speed": 3.2,
+    "radius": 0.22,
+    "armor": 2,
+    "armor_class": "light",
+    "bounty": 36,
+    "leak": 7,
+    "flying": false,
+    "cc_resist": 0.2,
+    "unlock_wave": 52,
+    "weight": 1.8,
+    "skill": 0.03,
+
+    "_marauder_note": "A leak bomb. Every other type threatens the base by arriving in numbers; this one threatens it by arriving at all. At 3.2 speed it crosses a tower's range in about half a second, so a build whose coverage is concentrated in one killbox leaks it no matter how much damage that killbox does, and 7 leak is close to a third of a full base. It is not a stat check -- the health is below the heavy at the same wave -- it is a coverage check, and the answer is spreading towers down the lane rather than stacking them at the best corner. Deliberately the lowest weight in the roster at 1.8: it should be a spike the player remembers, not a wave-long grind, and a pair of them leaking at once has to stay survivable.",
+
+    "death_fx": "goo"
   }
 }

@@ -27,6 +27,24 @@ const ENEMY_HUES = {
   runner: 75,
   splitter: 145,
   warden: 300,
+  // Late-game types. The wheel is crowded at sixteen entries, so silhouette is
+  // doing more of the identifying work than hue is -- each of these reads as a
+  // distinct shape before it reads as a distinct colour.
+  sentinel: 232,
+  wraith: 288,
+  hive: 22,
+  colossus: 352,
+  swarmling: 96,
+  // Second batch. Every hue here is picked to sit clear of its neighbours on the
+  // wheel as well as clear of the roster: husk is a desaturated bone against the
+  // purple armored, obsidian is a deep blue-violet that is not the sentinel's
+  // blue, and the marauder is the only high-chroma magenta in the game so a leak
+  // bomb reads instantly even in a crowd.
+  husk: 34,
+  overseer: 168,
+  obsidian: 258,
+  behemoth: 14,
+  marauder: 318,
 };
 
 // Spread around the wheel so no two towers read as the same colour.
@@ -191,11 +209,21 @@ function drawEnemy(ctx, x, y, fw, fh, key, frame = 0, frames = 6) {
 
   const scale =
     base === 'boss' ? 0.4
-      : base === 'heavy' ? 0.32
-        : base === 'bulwark' ? 0.3
-          : base === 'splitter' ? 0.3
-            : base === 'runner' ? 0.2
-              : 0.26;
+      : base === 'behemoth' ? 0.39
+        : base === 'colossus' ? 0.38
+          : base === 'sentinel' ? 0.33
+            : base === 'heavy' ? 0.32
+              : base === 'hive' ? 0.32
+                : base === 'bulwark' ? 0.3
+                  : base === 'splitter' ? 0.3
+                    : base === 'husk' ? 0.28
+                      : base === 'obsidian' ? 0.26
+                        : base === 'overseer' ? 0.27
+                          : base === 'marauder' ? 0.2
+                            : base === 'runner' ? 0.2
+                              : base === 'swarmling' ? 0.14
+                                : base === 'wraith' ? 0.24
+                                  : 0.26;
   const r = fw * scale * VARIANT_SCALE[variant];
   const phase = (frame / Math.max(1, frames)) * Math.PI * 2;
 
@@ -216,43 +244,90 @@ function drawEnemy(ctx, x, y, fw, fh, key, frame = 0, frames = 6) {
     ctx.stroke();
   };
 
-  if (base === 'flyer' || base === 'warden') {
-    // Wings attach at the shoulder and sweep back, so the silhouette is one
-    // creature rather than three shapes that happen to be near each other.
+  if (base === 'flyer' || base === 'warden' || base === 'wraith') {
     const flap = Math.sin(phase);
+    const wraith = base === 'wraith';
+
+    /*
+      The wraith gets blades, not wings. It shares an airframe with the flyer
+      and warden so it reads as the same family of threat, but a straight-edged
+      silhouette is the one thing the player can identify at gameplay zoom --
+      and it is the tell that this one is not going to be slowed.
+    */
     for (const sy of [-1, 1]) {
       const lift = flap * r * 0.22 * sy;
       ctx.beginPath();
-      ctx.moveTo(cx - r * 0.1, cy + sy * r * 0.12);
-      ctx.quadraticCurveTo(
-        cx - r * 0.55,
-        cy + sy * (r * 1.2 + lift),
-        cx - r * 1.2,
-        cy + sy * (r * 0.8 + lift),
-      );
-      ctx.quadraticCurveTo(
-        cx - r * 0.6,
-        cy + sy * (r * 0.42 + lift * 0.5),
-        cx - r * 0.06, cy + sy * r * 0.3,
-      );
+      if (wraith) {
+        ctx.moveTo(cx - r * 0.05, cy + sy * r * 0.1);
+        ctx.lineTo(cx - r * 0.85, cy + sy * (r * 1.35 + lift));
+        ctx.lineTo(cx - r * 1.45, cy + sy * (r * 0.62 + lift * 0.6));
+        ctx.lineTo(cx - r * 0.7, cy + sy * (r * 0.34 + lift * 0.4));
+      } else {
+        ctx.moveTo(cx - r * 0.1, cy + sy * r * 0.12);
+        ctx.quadraticCurveTo(
+          cx - r * 0.55,
+          cy + sy * (r * 1.2 + lift),
+          cx - r * 1.2,
+          cy + sy * (r * 0.8 + lift),
+        );
+        ctx.quadraticCurveTo(
+          cx - r * 0.6,
+          cy + sy * (r * 0.42 + lift * 0.5),
+          cx - r * 0.06, cy + sy * r * 0.3,
+        );
+      }
       ctx.closePath();
-      ctx.fillStyle = `hsl(${h} 62% 56%)`;
+      ctx.fillStyle = `hsl(${h} 62% ${wraith ? 44 : 56}%)`;
       ctx.fill();
       ctx.strokeStyle = `hsl(${h} 55% 30%)`;
       ctx.lineWidth = r * 0.1;
       ctx.stroke();
     }
 
-    // Rotor blur above the body: an ellipse that squashes as it spins, which is
-    // what separates powered flight from a bird at this size.
-    const spin = 0.25 + 0.75 * Math.abs(Math.sin(phase * 3));
-    ctx.strokeStyle = `hsla(${h} 45% 88% / 0.6)`;
-    ctx.lineWidth = r * 0.1;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, r * 0.9, r * 0.9 * spin, 0, 0, Math.PI * 2);
-    ctx.stroke();
+    if (wraith) {
+      // A trailing wisp instead of a rotor. Nothing about it should suggest
+      // machinery, so the rotor blur that separates the flyer from a bird is
+      // deliberately absent here.
+      ctx.strokeStyle = `hsla(${h} 70% 76% / 0.35)`;
+      ctx.lineWidth = r * 0.14;
+      ctx.beginPath();
+      ctx.moveTo(cx - r * 0.8, cy);
+      ctx.quadraticCurveTo(
+        cx - r * (1.5 + Math.sin(phase) * 0.12),
+        cy - r * 0.45,
+        cx - r * (2.0 + Math.cos(phase) * 0.14),
+        cy + r * 0.1,
+      );
+      ctx.stroke();
+    } else {
+      // Rotor blur above the body: an ellipse that squashes as it spins, which
+      // is what separates powered flight from a bird at this size.
+      const spin = 0.25 + 0.75 * Math.abs(Math.sin(phase * 3));
+      ctx.strokeStyle = `hsla(${h} 45% 88% / 0.6)`;
+      ctx.lineWidth = r * 0.1;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, r * 0.9, r * 0.9 * spin, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
     body(ctx, cx, cy, r * 0.72, h);
+
+    if (wraith) {
+      // A hollow core with the light *behind* the shell, which is the whole
+      // visual grammar for "this thing is not solid": a flyer has a canopy,
+      // a warden has a visor, and a wraith has a hole.
+      const glow = 0.5 + 0.5 * Math.sin(phase * 2);
+      ctx.beginPath();
+      ctx.ellipse(cx + r * 0.2, cy, r * 0.3, r * 0.42, 0, 0, Math.PI * 2);
+      ctx.fillStyle = `hsl(${h} 15% 8%)`;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(cx + r * 0.2, cy, r * (0.2 + glow * 0.06), r * (0.28 + glow * 0.07), 0, 0, Math.PI * 2);
+      ctx.fillStyle = `hsl(${h} 92% ${62 + glow * 16}%)`;
+      ctx.fill();
+      return;
+    }
+
     // A canopy, so there is something readable as a cockpit at this size.
     ctx.beginPath();
     ctx.ellipse(cx + r * 0.26, cy, r * 0.32, r * 0.24, 0, 0, Math.PI * 2);
@@ -275,7 +350,10 @@ function drawEnemy(ctx, x, y, fw, fh, key, frame = 0, frames = 6) {
   }
 
   // Ground types: legs first, so the body covers where they attach.
-  if (base === 'heavy' || base === 'boss') {
+  if (
+    base === 'heavy' || base === 'boss' || base === 'colossus'
+    || base === 'behemoth' || base === 'husk'
+  ) {
     // Four stubby legs, two pairs out of phase, for a lumbering gait.
     for (let i = 0; i < 4; i += 1) {
       const sy = i < 2 ? -1 : 1;
@@ -287,6 +365,9 @@ function drawEnemy(ctx, x, y, fw, fh, key, frame = 0, frames = 6) {
       ctx.lineTo(cx + off + (i < 2 ? -r * 0.45 : r * 0.35), cy + sy * r * 1.25);
       ctx.stroke();
     }
+  } else if (base === 'marauder') {
+    // Deliberately legless. It skims, and the absence of legs is half of why it
+    // reads as fast even in a still frame.
   } else {
     legs(ctx, cx, cy, r, frame, frames);
   }
@@ -426,6 +507,322 @@ function drawEnemy(ctx, x, y, fw, fh, key, frame = 0, frames = 6) {
     ctx.ellipse(cx - r * 1.15, cy, r * 0.5, r * 0.26, 0, 0, Math.PI * 2);
     ctx.fill();
     eyes(ctx, cx, cy, r * 0.46, r * 0.14, r * 0.07, h);
+  } else if (base === 'sentinel') {
+    /*
+      A broad shield face and a lit core. The shield is the information: this
+      is the type whose barrier refills faster than chip damage can strip it,
+      so it needs to read as armoured from the front the way the bulwark does,
+      but with a core that looks *powered* -- the core is what the player
+      learns to shoot through with energy or true damage.
+    */
+    ctx.fillStyle = `hsl(${h} 28% 30%)`;
+    ctx.beginPath();
+    ctx.roundRect(cx - r * 0.92, cy - r * 1.02, r * 0.66, r * 2.04, r * 0.22);
+    ctx.fill();
+    ctx.strokeStyle = `hsl(${h} 44% 70%)`;
+    ctx.lineWidth = r * 0.1;
+    ctx.stroke();
+
+    // Shoulder ridge, angled back so the mass reads as leaning into a push.
+    for (const sy of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(cx - r * 0.2, cy + sy * r * 0.5);
+      ctx.lineTo(cx + r * 0.55, cy + sy * r * 0.95);
+      ctx.lineTo(cx + r * 0.6, cy + sy * r * 0.55);
+      ctx.closePath();
+      ctx.fillStyle = `hsl(${h} 34% 44%)`;
+      ctx.fill();
+    }
+
+    // A hexagonal core rather than a round one, so it differs from every visor
+    // in the roster at a glance.
+    const pulse = 0.5 + 0.5 * Math.sin(phase * 2);
+    ctx.beginPath();
+    for (let i = 0; i < 6; i += 1) {
+      const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+      const px = cx + r * 0.16 + Math.cos(a) * r * 0.42;
+      const py = cy + Math.sin(a) * r * 0.42;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = `hsl(${h} 88% ${52 + pulse * 24}%)`;
+    ctx.fill();
+    ctx.strokeStyle = `hsl(${h} 60% 20%)`;
+    ctx.lineWidth = r * 0.09;
+    ctx.stroke();
+  } else if (base === 'husk') {
+    /*
+      A scorched carapace. The fissures are the tell: they glow the colour of a
+      fire that has already been through it, which is what the player is meant
+      to read as "this one is not going to burn". The plate covers the back and
+      leaves the front bare, like the armored, so the two read as the same
+      family of ground brute with different reasons for being tough.
+    */
+    const ember = 0.5 + 0.5 * Math.sin(phase * 2);
+    ctx.beginPath();
+    ctx.moveTo(cx - r * 0.95, cy - r * 0.6);
+    ctx.lineTo(cx - r * 0.15, cy - r * 1.05);
+    ctx.lineTo(cx + r * 0.75, cy - r * 0.5);
+    ctx.lineTo(cx + r * 0.55, cy + r * 0.68);
+    ctx.lineTo(cx - r * 0.6, cy + r * 0.86);
+    ctx.closePath();
+    ctx.fillStyle = `hsl(${h} 16% 24%)`;
+    ctx.fill();
+    ctx.strokeStyle = `hsl(${h} 26% 12%)`;
+    ctx.lineWidth = r * 0.1;
+    ctx.stroke();
+
+    ctx.strokeStyle = `hsla(${h} 94% ${56 + ember * 20}% / 0.9)`;
+    ctx.lineWidth = Math.max(1.5, r * 0.085);
+    for (let i = -1; i <= 1; i += 1) {
+      ctx.beginPath();
+      ctx.moveTo(cx - r * 0.8, cy + i * r * 0.44);
+      ctx.lineTo(cx - r * 0.1, cy + i * r * 0.24);
+      ctx.lineTo(cx + r * 0.5, cy + i * r * 0.52);
+      ctx.stroke();
+    }
+    eyes(ctx, cx, cy, r * 0.8, r * 0.22, r * 0.09, h);
+  } else if (base === 'overseer') {
+    /*
+      The support read. A wide halo rather than the healer's cross, because the
+      radius is the thing that matters here and the halo can be drawn at the
+      size of the aura it stands for. Three motes orbit it so the eye is pulled
+      to the unit that is keeping everything else alive -- which is exactly the
+      reaction the type is designed to provoke.
+    */
+    const spin = phase;
+    const glow = 0.5 + 0.5 * Math.sin(phase * 2);
+
+    ctx.strokeStyle = `hsla(${h} 74% 76% / ${0.34 + glow * 0.4})`;
+    ctx.lineWidth = Math.max(2, r * 0.12);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - r * 1.05, r * 1.15, r * 0.34, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // The staff, and the mote it is holding up.
+    ctx.strokeStyle = `hsl(${h} 34% 28%)`;
+    ctx.lineWidth = Math.max(2, r * 0.14);
+    ctx.beginPath();
+    ctx.moveTo(cx + r * 0.36, cy + r * 0.74);
+    ctx.lineTo(cx + r * 0.36, cy - r * 0.76);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx + r * 0.36, cy - r * 0.96, r * 0.2 * (1 + glow * 0.14), 0, Math.PI * 2);
+    ctx.fillStyle = `hsl(${h} 95% ${62 + glow * 22}%)`;
+    ctx.fill();
+
+    ctx.fillStyle = `hsla(${h} 90% 80% / 0.9)`;
+    for (let i = 0; i < 3; i += 1) {
+      const a = spin + (i / 3) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(a) * r * 0.95, cy + Math.sin(a) * r * 0.5, r * 0.11, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    eyes(ctx, cx, cy, r * 0.72, r * 0.2, r * 0.085, h);
+  } else if (base === 'obsidian') {
+    /*
+      Faceted rather than curved. Every other tough type in the roster is a
+      slab; this one is a set of sharp planes, so the silhouette says "glass"
+      before the colour says "resistant" -- and a dark, glossy surface is what
+      the player reads as energy sliding off it. The polygon is drawn slightly
+      wider than the body disc so no rounded edge survives underneath it.
+    */
+    const facets = [
+      [-0.93, -0.22], [-0.32, -1.03], [0.37, -0.84],
+      [0.99, -0.06], [0.54, 0.86], [-0.26, 1.04], [-0.86, 0.56],
+    ];
+    ctx.beginPath();
+    for (let i = 0; i < facets.length; i += 1) {
+      const px = cx + facets[i][0] * r;
+      const py = cy + facets[i][1] * r;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = `hsl(${h} 44% 18%)`;
+    ctx.fill();
+    ctx.strokeStyle = `hsl(${h} 72% 74%)`;
+    ctx.lineWidth = Math.max(1.5, r * 0.09);
+    ctx.stroke();
+
+    // Interior facet lines, so it reads as a cut gem and not a black blob.
+    ctx.strokeStyle = `hsla(${h} 60% 62% / 0.5)`;
+    ctx.lineWidth = Math.max(1, r * 0.05);
+    ctx.beginPath();
+    ctx.moveTo(cx - r * 0.93, cy - r * 0.22);
+    ctx.lineTo(cx + r * 0.2, cy + r * 0.12);
+    ctx.lineTo(cx + r * 0.99, cy - r * 0.06);
+    ctx.moveTo(cx - r * 0.32, cy - r * 1.03);
+    ctx.lineTo(cx + r * 0.2, cy + r * 0.12);
+    ctx.lineTo(cx - r * 0.26, cy + r * 1.04);
+    ctx.stroke();
+
+    // One thin bright core: the only thing on it that is not absorbing.
+    const spark = 0.5 + 0.5 * Math.sin(phase * 2);
+    ctx.beginPath();
+    ctx.arc(cx + r * 0.44, cy, r * 0.14 * (1 + spark * 0.3), 0, Math.PI * 2);
+    ctx.fillStyle = `hsl(${h} 96% ${62 + spark * 22}%)`;
+    ctx.fill();
+  } else if (base === 'behemoth') {
+    /*
+      The barrier is drawn by the renderer at runtime, so this sprite is only
+      the thing underneath it. Broader and squarer than the colossus, with a
+      vent bank across the back rather than that type's plate rows: slabs say
+      armour, vents say something is feeding the pool. The two have to be
+      separable at a glance because they ask for opposite answers.
+    */
+    ctx.beginPath();
+    ctx.roundRect(cx - r * 1.02, cy - r * 0.94, r * 1.88, r * 1.88, r * 0.3);
+    ctx.fillStyle = `hsl(${h} 18% 22%)`;
+    ctx.fill();
+    ctx.strokeStyle = `hsl(${h} 34% 58%)`;
+    ctx.lineWidth = r * 0.13;
+    ctx.stroke();
+
+    const vent = 0.5 + 0.5 * Math.sin(phase * 2);
+    for (let i = 0; i < 4; i += 1) {
+      ctx.beginPath();
+      ctx.roundRect(cx - r * 0.88, cy - r * 0.52 + i * r * 0.3, r * 0.48, r * 0.16, r * 0.06);
+      ctx.fillStyle = `hsl(${h} 94% ${28 + vent * 36}%)`;
+      ctx.fill();
+    }
+
+    // Blast visor, set square to the front and wider than the colossus'.
+    ctx.beginPath();
+    ctx.roundRect(cx + r * 0.38, cy - r * 0.44, r * 0.52, r * 0.88, r * 0.14);
+    ctx.fillStyle = `hsl(${h} 28% 12%)`;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(cx + r * 0.46, cy - r * 0.3, r * 0.36, r * 0.6, r * 0.1);
+    ctx.fillStyle = `hsl(${h} 90% 62%)`;
+    ctx.fill();
+
+    // Four eyes, so it is never mistaken for a heavy.
+    eyes(ctx, cx - r * 0.22, cy, r * 0.9, r * 0.34, r * 0.1, h);
+  } else if (base === 'marauder') {
+    /*
+      Built to be identified in the half-second it spends inside a tower's
+      range. A hard arrowhead, a swept tail, and a heat haze streaming off it --
+      no round edges anywhere, because round is what the rest of the roster
+      looks like and this one has to stand out the moment it arrives.
+    */
+    ctx.beginPath();
+    ctx.moveTo(cx + r * 1.28, cy);
+    ctx.lineTo(cx - r * 0.1, cy - r * 0.74);
+    ctx.lineTo(cx - r * 0.64, cy - r * 0.3);
+    ctx.lineTo(cx - r * 0.64, cy + r * 0.3);
+    ctx.lineTo(cx - r * 0.1, cy + r * 0.74);
+    ctx.closePath();
+    ctx.fillStyle = `hsl(${h} 88% 56%)`;
+    ctx.fill();
+    ctx.strokeStyle = `hsl(${h} 70% 20%)`;
+    ctx.lineWidth = r * 0.1;
+    ctx.stroke();
+
+    for (const sy of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(cx - r * 0.5, cy + sy * r * 0.28);
+      ctx.lineTo(cx - r * 1.34, cy + sy * r * 0.88);
+      ctx.lineTo(cx - r * 0.72, cy + sy * r * 0.16);
+      ctx.closePath();
+      ctx.fillStyle = `hsl(${h} 74% 42%)`;
+      ctx.fill();
+    }
+
+    // Heat haze. At this size it is what actually sells the speed.
+    ctx.fillStyle = `hsla(${h} 70% 84% / 0.3)`;
+    for (let i = 1; i <= 3; i += 1) {
+      ctx.beginPath();
+      ctx.ellipse(
+        cx - r * (0.9 + i * 0.34), cy,
+        r * (0.34 - i * 0.06), r * (0.2 - i * 0.04), 0, 0, Math.PI * 2,
+      );
+      ctx.fill();
+    }
+    eyes(ctx, cx, cy, r * 0.5, r * 0.16, r * 0.07, h);
+  } else if (base === 'colossus') {
+    /*
+      The armour wall. It has to look like the shots are not landing: layered
+      slabs over the whole body, a chunky blast visor, and four eyes rather
+      than two so it is never mistaken for a heavy at a glance.
+    */
+    ctx.fillStyle = `hsl(${h} 22% 26%)`;
+    ctx.beginPath();
+    ctx.roundRect(cx - r * 0.85, cy - r * 1.05, r * 1.5, r * 2.1, r * 0.26);
+    ctx.fill();
+    ctx.strokeStyle = `hsl(${h} 38% 62%)`;
+    ctx.lineWidth = r * 0.12;
+    ctx.stroke();
+
+    plate(0.3, -0.92, 0.3, 0.92);
+    plate(-0.22, -0.88, -0.22, 0.88);
+    plate(-0.62, -0.74, -0.62, 0.74);
+
+    // A heavy blast visor, scored across so it reads as thick rather than dark.
+    ctx.beginPath();
+    ctx.roundRect(cx + r * 0.42, cy - r * 0.36, r * 0.5, r * 0.72, r * 0.14);
+    ctx.fillStyle = `hsl(${h} 30% 10%)`;
+    ctx.fill();
+    ctx.fillStyle = `hsl(${h} 90% 62%)`;
+    ctx.beginPath();
+    ctx.roundRect(cx + r * 0.5, cy - r * 0.26, r * 0.34, r * 0.52, r * 0.12);
+    ctx.fill();
+    ctx.strokeStyle = `hsl(${h} 30% 8%)`;
+    ctx.lineWidth = r * 0.05;
+    for (let i = -1; i <= 1; i += 1) {
+      ctx.beginPath();
+      ctx.moveTo(cx + r * 0.5, cy + i * r * 0.16);
+      ctx.lineTo(cx + r * 0.84, cy + i * r * 0.16);
+      ctx.stroke();
+    }
+
+    eyes(ctx, cx, cy, r * 0.9, r * 0.62, r * 0.1, h);
+    eyes(ctx, cx - r * 0.34, cy, r * 0.48, r * 0.3, r * 0.075, h);
+  } else if (base === 'hive') {
+    /*
+      A brood sac. Where the splitter shows three pods through the skin, the
+      hive is a honeycomb of them -- the count is the message, because five
+      children is a different problem from two and the player should see it
+      coming rather than learn it from a leak.
+    */
+    const swell = 0.5 + 0.5 * Math.sin(phase * 2);
+    for (let ring = 0; ring < 2; ring += 1) {
+      const count = ring === 0 ? 1 : 6;
+      const dist = ring === 0 ? 0 : r * 0.58;
+      for (let i = 0; i < count; i += 1) {
+        const a = (i / count) * Math.PI * 2 + ring * 0.4;
+        const px = cx + Math.cos(a) * dist;
+        const py = cy + Math.sin(a) * dist;
+        ctx.beginPath();
+        ctx.arc(px, py, r * (ring === 0 ? 0.34 : 0.26) * (1 + swell * 0.05), 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${h} 58% ${30 + ring * 6}%)`;
+        ctx.fill();
+        ctx.strokeStyle = `hsl(${h} 48% 68%)`;
+        ctx.lineWidth = r * 0.06;
+        ctx.stroke();
+      }
+    }
+    // A rim that swells against the pods, so the whole thing looks about to
+    // give way.
+    ctx.strokeStyle = `hsla(${h} 62% 80% / ${0.3 + swell * 0.4})`;
+    ctx.lineWidth = Math.max(1.5, r * 0.11);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * (0.92 + swell * 0.12), 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (base === 'swarmling') {
+    // A runt: spikes out, no antenna, and a fast scuttle. It only ever appears
+    // in fives, so it has to be cheap to draw and instantly countable.
+    ctx.fillStyle = `hsl(${h} 74% 50%)`;
+    for (let i = 0; i < 7; i += 1) {
+      const a = (i / 7) * Math.PI * 2 + phase * 0.4;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a - 0.2) * r * 0.7, cy + Math.sin(a - 0.2) * r * 0.7);
+      ctx.lineTo(cx + Math.cos(a) * r * 1.25, cy + Math.sin(a) * r * 1.25);
+      ctx.lineTo(cx + Math.cos(a + 0.2) * r * 0.7, cy + Math.sin(a + 0.2) * r * 0.7);
+      ctx.closePath();
+      ctx.fill();
+    }
+    eyes(ctx, cx, cy, r * 0.4, r * 0.16, r * 0.08, h);
   } else if (base === 'fast') {
     // Swept fins and a tapered nose: everything about it should say speed.
     ctx.fillStyle = `hsl(${h} 66% 44%)`;

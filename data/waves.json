@@ -22,7 +22,7 @@
 
   "mini_boss": {
     "every": 10,
-    "hp_mult": 4.0,
+    "hp_mult": 3.2,
     "bounty_mult": 6.0
   },
 
@@ -32,10 +32,10 @@
     "count_per_50_waves": 1
   },
 
-  "_scaling_comment": "hp_exp is the lever that moves the late wall. The player's damage saturates (max_level 20 plus four specialisation tiers), so enemy health is the only curve still growing; because it is exponential, a small change compounds hard -- at wave 55 a 1.058 -> 1.066 step is already 1.55x more health. count_lin was tried at 0.17 and REVERTED: extra enemies are extra bounty, and the measured effect was to make the run EASIER (budget 22 reached wave 67 against a 62 baseline) because the income outpaced the threat.",
+  "_scaling_comment": "hp_exp is the lever that moves the late wall. The player's damage saturates (max_level 20 plus four specialisation tiers), so enemy health is the only curve still growing; because it is exponential, a small change compounds hard. count_lin was tried at 0.17 and REVERTED: extra enemies are extra bounty, and the measured effect was to make the run EASIER because the income outpaced the threat. hp_exp was re-tuned from 1.081 to 1.060 after the roster gained its late-game counters, then nudged back up to 1.066 alongside the tower-scaling nerf: the complaint was that weapon upgrades outpaced enemy strength in the mid game, so towers were weakened (damage_per_level 0.12 -> 0.09, rate_per_level 0.06 -> 0.045) and the enemy curve steepened to compensate. The two move in opposite directions on purpose -- towers are what a maxed build stops growing, enemies are what it can never outgrow.",
   "scaling": {
     "hp_lin": 0.098,
-    "hp_exp": 1.081,
+    "hp_exp": 1.066,
     "count_lin": 0.155,
     "speed_lin": 0.013,
     "speed_cap": 2.0,
@@ -43,6 +43,10 @@
     "_armor_comment": "Flat armour every enemy gains as the run goes on. This is the one late-game lever that lowers the player's EFFECTIVE damage instead of raising a health bar, so it bites on a different axis than hp does: a gatling or flamethrower built on many tiny hits loses a far larger fraction of its output than a sniper does, and towers that ignore or halve armour (venom, tesla) become the answer. Deliberately NOT multiplied by difficulty `power`: armour is subtraction, and a 5x multiplier would leave low-damage towers unable to damage anything at all rather than merely weakened.",
     "armor_lin": 0.085,
     "armor_cap": 12,
+
+    "_cc_resist_comment": "Crowd-control resistance every enemy gains as the run goes on. Armour answers builds that fire many small shots; this answers builds that lean on slowing the lane to a crawl. It exists because `cc_resist` is a per-type constant and seven of the eleven types sit at 0.0, so a frost build applied its full slow to a wave-60 Colossus exactly as it did to a wave-1 Basic -- the tower's four specialisation tiers kept multiplying the slow while the enemy side of that contest never moved. Capped so late waves are slow-RESISTANT, never slow-immune: frost has to fall back from 'stop everything' to 'buy time', which is the intended arc. Scaled by growth like armour, and deliberately not by power, which would push it past 1.0 on Nightmare.",
+    "cc_resist_lin": 0.011,
+    "cc_resist_cap": 0.55,
 
     "bounty_lin": 0.03,
     "bounty_exp": 1.045
@@ -83,7 +87,7 @@
   "bonus_tile_coins": 25,
   "sell_refund": 0.7,
 
-  "_leveling_comment": "Tower levelling. `xp_per_damage` and `xp_to_next_base` together set how fast a tower evolves: a tower earns xp_per_damage per point of damage it deals, and needs xp_to_next_base * level^xp_to_next_power to reach the next level. Both were raised to slow evolution down -- a tower used to reach level 20 long before the run ended, so its growth was over for most of the run and the last thirty waves were played with a finished build. Slower levelling spreads that growth across the whole run, and it also delays the specialisation tiers, which are what the late wall is actually made of.",
+  "_leveling_comment": "Tower levelling. `xp_per_damage` and `xp_to_next_base` together set how fast a tower evolves: a tower earns xp_per_damage per point of damage it deals, and needs xp_to_next_base * level^xp_to_next_power to reach the next level. damage_per_level and rate_per_level were lowered (0.12/0.06 -> 0.09/0.045): a maxed tower used to reach 7x its base DPS from levels alone, which finished growing around wave 35 and left the mid game solved by a handful of upgraded towers -- the player could reach the wave-40 unlock with a single base. Weakening per-level growth makes every tower worth less in the mid game, so more towers (and therefore more bases) are what closes the gap. xp_to_next_power was raised alongside so levelling also runs deeper into the run rather than finishing early.",
   "leveling": {
     "max_level": 20,
     "damage_per_level": 0.12,
@@ -91,10 +95,10 @@
     "rate_per_level": 0.06,
     "xp_per_damage": 0.13,
     "xp_to_next_base": 110.0,
-    "xp_to_next_power": 1.55,
+    "xp_to_next_power": 1.62,
     "upgrade_cost_factor": 0.6,
     "upgrade_cost_growth": 1.32,
-    "specialisation_cost_factor": 1.2,
-    "spec_cost_growth": 1.55
+    "specialisation_cost_factor": 1.35,
+    "spec_cost_growth": 1.60
   }
 }

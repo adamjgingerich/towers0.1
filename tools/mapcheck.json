@@ -1,0 +1,68 @@
+[
+ {
+  "id": "level_01",
+  "lane": 162,
+  "buildable": 797,
+  "ok": true
+ },
+ {
+  "id": "level_02",
+  "lane": 174,
+  "buildable": 237,
+  "ok": true
+ },
+ {
+  "id": "level_03",
+  "lane": 153,
+  "buildable": 480,
+  "ok": true
+ },
+ {
+  "id": "level_04",
+  "lane": 155,
+  "buildable": 569,
+  "ok": true
+ },
+ {
+  "id": "level_05",
+  "lane": 163,
+  "buildable": 334,
+  "ok": true
+ },
+ {
+  "id": "level_06",
+  "lane": 145,
+  "buildable": 528,
+  "ok": true
+ },
+ {
+  "id": "level_07",
+  "lane": 175,
+  "buildable": 355,
+  "ok": true
+ },
+ {
+  "id": "level_08",
+  "lane": 127,
+  "buildable": 341,
+  "ok": true
+ },
+ {
+  "id": "level_09",
+  "lane": 244,
+  "buildable": 191,
+  "ok": true
+ },
+ {
+  "id": "level_10",
+  "lane": 168,
+  "buildable": 258,
+  "ok": true
+ },
+ {
+  "id": "level_11",
+  "lane": 224,
+  "buildable": 373,
+  "ok": true
+ }
+]

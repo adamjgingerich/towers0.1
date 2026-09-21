@@ -6,12 +6,24 @@
  * them is stepped 60 times a second.
  */
 
+/**
+ * Hard ceiling on total crowd-control resistance, from any source.
+ *
+ * Below 1.0 so that no enemy can ever become fully immune to a slow: the
+ * late-game curve *reduces* what a frost build achieves, it does not switch
+ * that build off. Kept here rather than in data because it is a correctness
+ * bound on `applySlow`, not a tunable -- a value of 1.0 would make slows
+ * silently do nothing, which reads as a bug rather than as difficulty.
+ */
+const CC_RESIST_CEILING = 0.85;
+
 export class Enemy {
   constructor(eid, d, path, {
     hpMult = 1.0,
     speedMult = 1.0,
     bountyMult = 1.0,
     armorBonus = 0.0,
+    ccResistBonus = 0.0,
   } = {}) {
     this.eid = eid;
     this.key = d.key;
@@ -33,6 +45,16 @@ export class Enemy {
      * is fixed at spawn and `effectiveArmor` is consulted on every hit.
      */
     this.armorBonus = armorBonus;
+
+    /**
+     * Crowd-control resistance granted by the wave, on top of the type's own.
+     *
+     * Same reasoning as `armorBonus`: fixed at spawn, so it is stored rather
+     * than recomputed on every slow applied. Without it a frost build's slow
+     * never diminished, because `d.cc_resist` is a constant per type and seven
+     * of the eleven types sit at 0.0.
+     */
+    this.ccResistBonus = ccResistBonus;
 
     this.dist = 0.0;
     this.progress = 0.0;
@@ -75,12 +97,26 @@ export class Enemy {
      * after `shield_delay` seconds without being hit -- so sustained fire keeps
      * one down while intermittent chip damage never gets past it at all.
      *
+     * Scaled by `hpMult` alongside health, because a flat pool against an
+     * exponentially growing health bar is not a weak barrier, it is no barrier.
+     * Authored flat, the Bulwark's 200-point pool fell from 62% of its health at
+     * wave 1 to 0.5% at wave 30 and 0.009% at wave 70 -- so past the early game
+     * the shield was stripped by the first shot of any tower and `shield_mult`
+     * stopped mattering at all. That silently deleted the counterplay the pool
+     * exists to create: energy damage is meant to be the answer to a shielded
+     * type (1.5x against physical's 0.5x), and it was an answer to nothing.
+     *
+     * Scaling pool and regeneration by the *same* factor keeps the seconds-to-
+     * refill the authored constant: `shield_delay` is the design decision, and
+     * the rate only has to be proportional to the pool for that to hold.
+     *
      * `shielded` mirrors "the pool is up" and is what the damage matrix reads
      * to pick `shield_mult`, so it has to track the pool rather than be a static
      * property of the type.
      */
-    this.shieldMax = d.shield ?? 0.0;
+    this.shieldMax = (d.shield ?? 0.0) * hpMult;
     this.shield = this.shieldMax;
+    this.shieldRegen = (d.shield_regen ?? 0.0) * hpMult;
     this.shieldHold = 0.0;
     this.shielded = this.shieldMax > 0.0;
 
@@ -141,7 +177,14 @@ export class Enemy {
 
   /** `factor` is a speed multiplier (0.65 = 35% slow). */
   applySlow(factor, duration) {
-    const resist = this.d.cc_resist;
+    /*
+      Capped below 1.0 so that a late wave is slow-*resistant*, never
+      slow-immune: a hardened enemy still eats a real fraction of the slow, so
+      frost towers remain worth their slots instead of being switched off by a
+      curve. The type's own `cc_resist` and the wave's bonus stack here, which
+      is why the sum is clamped rather than either value alone.
+    */
+    const resist = Math.min(CC_RESIST_CEILING, this.d.cc_resist + this.ccResistBonus);
     const strength = (1.0 - factor) * (1.0 - resist);
     if (strength <= 0.0 || duration <= 0.0) return;
 
@@ -215,7 +258,7 @@ export class Enemy {
       if (this.shieldHold > 0.0) {
         this.shieldHold -= dt;
       } else if (this.shield < this.shieldMax) {
-        this.shield = Math.min(this.shieldMax, this.shield + this.d.shield_regen * dt);
+        this.shield = Math.min(this.shieldMax, this.shield + this.shieldRegen * dt);
         this.shielded = true;
       }
     }
